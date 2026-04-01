@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BWM Compliance & Risk Assessment Tool</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fa; padding-top: 2rem; }
+        .card { margin-bottom: 2rem; box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075); }
+        .section-title { background-color: #004085; color: white; padding: 10px; border-radius: 5px 5px 0 0; }
+        .risk-normal { background-color: #28a745; color: white; padding: 20px; border-radius: 10px; }
+        .risk-attention { background-color: #ffc107; color: black; padding: 20px; border-radius: 10px; }
+        .risk-warning { background-color: #dc3545; color: white; padding: 20px; border-radius: 10px; }
+        .hidden { display: none !important; }
+        .form-label.required::after { content: " *"; color: red; }
+        /* 增加列表間距讓排版更適合閱讀 */
+        ul.action-list { margin-top: 10px; padding-left: 20px; }
+        ul.action-list li { margin-bottom: 5px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1 class="text-center mb-4">BWM Compliance & Risk Assessment Tool</h1>
+    <form id="bwmForm" novalidate>
+        
+        <div class="card">
+            <div class="section-title">Part 1: Voyage Information</div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label required">Vessel Name</label>
+                        <select class="form-select" id="vesselName" required>
+                            <option value="">Loading vessels...</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label required">Voyage Number</label>
+                        <input type="text" class="form-control" id="voyageNo" required>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="section-title">Part 2: BWMS Operating Limits</div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label required">BWMS Type</label>
+                        <select class="form-select" id="bwmsType" required onchange="toggleLimitFields()">
+                            <option value="">Select Type</option>
+                            <option value="Electrolysis">Electrolysis</option>
+                            <option value="Chemical">Chemical Injection</option>
+                            <option value="UV">UV System</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label required">Min Temperature (°C)</label>
+                        <input type="number" step="0.1" class="form-control" id="minTemp" required>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label required">Max Temperature (°C)</label>
+                        <input type="number" step="0.1" class="form-control" id="maxTemp" required>
+                    </div>
+                    
+                    <div class="col-md-4 mb-3 hidden" id="salinityField">
+                        <label class="form-label required">Minimum Salinity (PSU)</label>
+                        <input type="number" step="0.1" class="form-control" id="minSalinity">
+                    </div>
+                    <div class="col-md-4 mb-3 hidden" id="uvtField">
+                        <label class="form-label required">Minimum UV-T (%)</label>
+                        <input type="number" step="0.1" class="form-control" id="minUVT">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="section-title">Part 3: Departure Information</div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label required">Country</label>
+                        <select class="form-select" id="depCountry" required>
+                            <option value="">Select Country</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label required">Port</label>
+                        <input type="text" class="form-control" id="depPort" required>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label required">ETD</label>
+                        <input type="date" class="form-control" id="etd" required>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label required">D1 Ballast Water (m³)</label>
+                        <input type="number" class="form-control" id="d1Vol" value="0" min="0" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label required">D2 Ballast Water (m³)</label>
+                        <input type="number" class="form-control" id="d2Vol" value="0" min="0" required>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label required">BWMS Test Time</label>
+                        <input type="datetime-local" class="form-control" id="depTestTime" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label required">Test Result</label>
+                        <select class="form-select" id="depTestResult" required onchange="syncVoyageTest()">
+                            <option value="">Select Result</option>
+                            <option value="Normal">Normal</option>
+                            <option value="Restricted">Restricted</option>
+                            <option value="Fault">Fault</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="section-title">Part 4: During Voyage Verification</div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label required">Test Time (During Voyage)</label>
+                        <input type="datetime-local" class="form-control" id="voyTestTime" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label required">Current BWMS Status</label>
+                        <select class="form-select" id="voyTestResult" required>
+                            <option value="">Select Result</option>
+                            <option value="Normal">Normal</option>
+                            <option value="Restricted">Restricted</option>
+                            <option value="Fault">Fault</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="section-title">Part 5: Destination Information</div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label required">Country</label>
+                        <select class="form-select" id="destCountry" required onchange="loadPorts()">
+                            <option value="">Select Country</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label required">Port</label>
+                        <div id="portContainer">
+                            <select class="form-select" id="destPort" required onchange="checkOtherPort()">
+                                <option value="">Select Country First</option>
+                            </select>
+                            <input type="text" id="destPortOther" class="form-control mt-2 hidden" placeholder="Please specify port name...">
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label required">ETA</label>
+                        <input type="date" class="form-control" id="eta" required>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label required">Cargo Operation</label>
+                        <select class="form-select" id="cargoOps" required>
+                            <option value="">Select Operation</option>
+                            <option value="Loading">Loading (Discharging Ballast)</option>
+                            <option value="Unloading">Unloading (Uptake Ballast)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label required">Water Temperature (°C)</label>
+                        <input type="number" step="0.1" class="form-control" id="destTemp" required>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label required">Water Density (e.g. 1.025)</label>
+                        <input type="number" step="0.001" class="form-control" id="destDensity" required>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Water Salinity (Optional)</label>
+                        <input type="number" step="0.1" class="form-control" id="destSalinity">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">UV-T (%) (Optional)</label>
+                        <input type="number" step="0.1" class="form-control" id="destUVT">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-grid gap-2 mb-5">
+            <button type="button" class="btn btn-primary btn-lg" onclick="analyzeBWM()">Analyze Risk</button>
+        </div>
+    </form>
+
+    <div id="resultSection" class="hidden">
+        <div id="riskLight" class="text-center mb-4">
+            <h2 id="riskTitle"></h2>
+            <p id="riskDesc"></p>
+        </div>
+        <div class="card border-0 shadow">
+            <div class="card-body">
+                <h5 class="card-title text-primary border-bottom pb-2">Assessment Details:</h5>
+                <ul class="list-unstyled mt-3 mb-4">
+                    <li id="statusDeparture" class="mb-2"></li>
+                    <li id="statusEnv"></li>
+                </ul>
+                <div id="envWarnings" class="alert alert-warning hidden"></div>
+                <div id="actionAdvice" class="alert alert-info"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Config: 請將此處替換為您的 GAS 部署網址
+    const GAS_URL = "YOUR_GAS_DEPLOYED_URL_HERE";
+    
+    let turbidityData = [];
+    let vesselListData = [];
+
+    const coastalCountries = [
+        "Albania", "Algeria", "Angola", "Antigua and Barbuda", "Argentina", "Australia", "Bahamas", "Bahrain", "Bangladesh", "Barbados", "Belgium", "Belize", "Benin", "Brazil", "Brunei", "Bulgaria", "Cabo Verde", "Cambodia", "Cameroon", "Canada", "Chile", "China", "Colombia", "Comoros", "Congo (Brazzaville)", "Congo (Kinshasa)", "Costa Rica", "Croatia", "Cuba", "Cyprus", "Denmark", "Djibouti", "Dominica", "Dominican Republic", "Ecuador", "Egypt", "El Salvador", "Equatorial Guinea", "Eritrea", "Estonia", "Fiji", "Finland", "France", "Gabon", "Gambia", "Georgia", "Germany", "Ghana", "Greece", "Grenada", "Guatemala", "Guinea", "Guinea-Bissau", "Guyana", "Haiti", "Honduras", "Iceland", "India", "Indonesia", "Iran", "Iraq", "Ireland", "Israel", "Italy", "Ivory Coast", "Jamaica", "Japan", "Jordan", "Kenya", "Kiribati", "Kuwait", "Lebanon", "Liberia", "Libya", "Lithuania", "Madagascar", "Malaysia", "Maldives", "Malta", "Marshall Islands", "Mauritania", "Mauritius", "Mexico", "Micronesia", "Monaco", "Montenegro", "Morocco", "Mozambique", "Myanmar", "Namibia", "Nauru", "Netherlands", "New Zealand", "Nicaragua", "Nigeria", "North Korea", "Norway", "Oman", "Pakistan", "Palau", "Panama", "Papua New Guinea", "Peru", "Philippines", "Poland", "Portugal", "Qatar", "Romania", "Russia", "Saint Kitts and Nevis", "Saint Lucia", "Saint Vincent and the Grenadines", "Samoa", "Sao Tome and Principe", "Saudi Arabia", "Senegal", "Seychelles", "Sierra Leone", "Singapore", "Solomon Islands", "Somalia", "South Africa", "South Korea", "Spain", "Sri Lanka", "Sudan", "Suriname", "Sweden", "Syria", "Taiwan", "Tanzania", "Thailand", "Timor-Leste", "Togo", "Tonga", "Trinidad and Tobago", "Tunisia", "Turkey", "Tuvalu", "Ukraine", "United Arab Emirates", "United Kingdom", "United States", "Uruguay", "Vanuatu", "Venezuela", "Vietnam", "Yemen"
+    ];
+
+    window.onload = async () => {
+        const depCountrySelect = document.getElementById('depCountry');
+        const destCountrySelect = document.getElementById('destCountry');
+        coastalCountries.forEach(country => {
+            depCountrySelect.appendChild(new Option(country, country));
+            destCountrySelect.appendChild(new Option(country, country));
+        });
+
+        try {
+            const response = await fetch(GAS_URL);
+            const data = await response.json();
+            
+            turbidityData = data.turbidityData;
+            vesselListData = data.vesselList;
+
+            const vesselSelect = document.getElementById('vesselName');
+            vesselSelect.innerHTML = '<option value="">Select Vessel</option>';
+            vesselListData.forEach(vessel => {
+                vesselSelect.appendChild(new Option(vessel, vessel));
+            });
+            
+        } catch (e) { 
+            console.error("Failed to load GAS data", e); 
+            document.getElementById('vesselName').innerHTML = '<option value="">Error loading data</option>';
+        }
+    };
+
+    function loadPorts() {
+        const country = document.getElementById('destCountry').value;
+        const portSelect = document.getElementById('destPort');
+        
+        portSelect.innerHTML = '<option value="">Select Port</option>';
+        
+        if (country) {
+            const filteredPorts = turbidityData.filter(item => item.country === country);
+            filteredPorts.forEach(p => {
+                portSelect.appendChild(new Option(p.port, p.port));
+            });
+            portSelect.appendChild(new Option("Other...", "Other"));
+        } else {
+            portSelect.innerHTML = '<option value="">Select Country First</option>';
+        }
+        checkOtherPort();
+    }
+
+    function checkOtherPort() {
+        const portSelect = document.getElementById('destPort').value;
+        const otherInput = document.getElementById('destPortOther');
+        
+        if (portSelect === "Other") {
+            otherInput.classList.remove('hidden');
+            otherInput.required = true;
+        } else {
+            otherInput.classList.add('hidden');
+            otherInput.required = false;
+            otherInput.value = '';
+        }
+    }
+
+    function toggleLimitFields() {
+        const type = document.getElementById('bwmsType').value;
+        const salField = document.getElementById('salinityField');
+        const minSalInput = document.getElementById('minSalinity');
+        if (type === 'Electrolysis') {
+            salField.classList.remove('hidden');
+            minSalInput.required = true;
+        } else {
+            salField.classList.add('hidden');
+            minSalInput.required = false;
+            minSalInput.value = '';
+        }
+
+        const uvtField = document.getElementById('uvtField');
+        const minUvtInput = document.getElementById('minUVT');
+        if (type === 'UV') {
+            uvtField.classList.remove('hidden');
+            minUvtInput.required = true;
+        } else {
+            uvtField.classList.add('hidden');
+            minUvtInput.required = false;
+            minUvtInput.value = '';
+        }
+    }
+
+    function syncVoyageTest() {
+        document.getElementById('voyTestResult').value = document.getElementById('depTestResult').value;
+    }
+
+    function analyzeBWM() {
+        const form = document.getElementById('bwmForm');
+        if (!form.checkValidity()) {
+            form.reportValidity();
+            return; 
+        }
+
+        const type = document.getElementById('bwmsType').value;
+        const d1 = parseFloat(document.getElementById('d1Vol').value);
+        const depStatus = d1 > 0 ? "Violation" : "Compliant";
+        const voyStatus = document.getElementById('voyTestResult').value;
+        const cargoOps = document.getElementById('cargoOps').value;
+
+        const destPortSelect = document.getElementById('destPort').value;
+        const destTemp = parseFloat(document.getElementById('destTemp').value);
+        const minTemp = parseFloat(document.getElementById('minTemp').value);
+        const maxTemp = parseFloat(document.getElementById('maxTemp').value);
+        const density = parseFloat(document.getElementById('destDensity').value);
+        
+        const salInput = document.getElementById('destSalinity').value;
+        const sal = salInput ? parseFloat(salInput) : NaN;
+        const minSalLimit = parseFloat(document.getElementById('minSalinity').value);
+        
+        let envSafe = true;
+        let warnings = [];
+
+        // Temperature Check -> Converted to Bullet Points
+        if (destTemp < minTemp || destTemp > maxTemp) {
+            envSafe = false;
+            warnings.push(`<strong>[Temperature Warning]</strong> Water temperature exceeds BWMS limits, restricting capacity.
+                <ul class="action-list mb-0">
+                    <li><strong>NOTE:</strong> BWMS failure due to temperature non-compliance CANNOT invoke CWQ measures.</li>
+                </ul>`);
+        }
+
+        // Salinity/Density Check -> Converted to Bullet Points
+        if (type === 'Electrolysis') {
+            if (density < 1.01 || (!isNaN(sal) && sal < minSalLimit)) {
+                envSafe = false;
+                warnings.push(`<strong>[Salinity/Density Warning]</strong> Values may be below BWMS operating limits, causing failure. Required Actions:
+                    <ul class="action-list mb-0">
+                        <li>Consider pre-storing treated (D2) seawater to facilitate a mixing solution at the destination port.</li>
+                        <li>Notify the company immediately for assistance.</li>
+                    </ul>`);
+            }
+        }
+
+        // Turbidity Check -> Converted to Bullet Points
+        const isHighTurbidity = (destPortSelect !== "Other" && destPortSelect !== "");
+        
+        if (isHighTurbidity) {
+            envSafe = false;
+            if (type === 'Electrolysis' || type === 'Chemical') {
+                const typeName = type === 'Electrolysis' ? 'Electrolysis' : 'Chemical Injection';
+                warnings.push(`<strong>[Turbidity Warning]</strong> High turbidity at destination port may restrict or fail the BWMS. Required Actions:
+                    <ul class="action-list mb-0">
+                        <li>Consult the local agent to confirm recent cases of ${typeName} BWMS failure due to high turbidity.</li>
+                        <li>Notify the company immediately for assistance.</li>
+                        <li>If the agent confirms previous failures, prepare to invoke CWQ contingency measures.</li>
+                        <li><strong>CRITICAL:</strong> Ensure the BWMS Filter High DP alarm is triggered and retain all relevant electronic and paper records (BWRB).</li>
+                    </ul>`);
+            } else if (type === 'UV') {
+                warnings.push(`<strong>[Turbidity / UV-T Warning]</strong> High turbidity or low UV-T may restrict or fail the BWMS. Required Actions:
+                    <ul class="action-list mb-0">
+                        <li>Consult the local agent to provide local UV-T values and confirm recent UV BWMS failures.</li>
+                        <li>Notify the company immediately for assistance.</li>
+                        <li>If UV-T is below the operating limit or the agent confirms previous failures, prepare to invoke CWQ contingency measures.</li>
+                        <li><strong>CRITICAL:</strong> Ensure the BWMS Filter High DP alarm is triggered and retain all relevant electronic and paper records (BWRB).</li>
+                    </ul>`);
+            }
+        }
+
+        // Generate Action Advice -> Converted to Bullet Points
+        let risk = "Normal";
+        let advice = "";
+
+        if (cargoOps === 'Loading') {
+            if (depStatus === 'Compliant' && voyStatus === 'Normal') {
+                risk = "Normal";
+                advice = `<ul class="action-list mb-0">
+                    <li>Status is safe. Maintain standard BWM procedures.</li>
+                </ul>`;
+            } else if (depStatus === 'Violation' && voyStatus === 'Normal') {
+                risk = "Attention";
+                advice = `<ul class="action-list mb-0">
+                    <li>Discharge D1 ballast water at an appropriate location during the voyage.</li>
+                    <li>Ensure all onboard ballast water meets the D2 standard before arrival.</li>
+                </ul>`;
+            } else if (depStatus === 'Violation' && (voyStatus !== 'Normal')) {
+                risk = "Warning";
+                advice = `<ul class="action-list mb-0">
+                    <li>Seek assistance from the Technical Department to restore BWMS functionality as soon as possible.</li>
+                    <li>Discharge D1 ballast water at an appropriate location during the voyage to ensure all onboard ballast water meets D2 standard before arrival.</li>
+                    <li>If D1 cannot be fully discharged due to vessel stability, ensure <strong>NO D1</strong> ballast water is discharged at the destination port.</li>
+                    <li>Notify the port authority via NOA. (Note: Cargo loading capacity may be reduced as a result).</li>
+                </ul>`;
+            }
+        } else {
+            // Unloading
+            if (depStatus === 'Compliant' && voyStatus === 'Normal' && envSafe) {
+                risk = "Normal";
+                advice = `<ul class="action-list mb-0">
+                    <li>Status is safe. Maintain standard BWM procedures.</li>
+                </ul>`;
+            } else if (depStatus === 'Compliant' && voyStatus === 'Normal' && !envSafe) {
+                risk = "Warning";
+                advice = `<ul class="action-list mb-0">
+                    <li>Refer to the Environment Warnings and checklists provided above.</li>
+                </ul>`;
+            } else if (depStatus === 'Compliant' && voyStatus !== 'Normal' && envSafe) {
+                risk = "Warning";
+                advice = `<ul class="action-list mb-0">
+                    <li>Seek assistance from the Technical Department to restore BWMS functionality as soon as possible.</li>
+                    <li>Considering vessel stability, evaluate whether cargo can be unloaded without ballasting.</li>
+                    <li>Evaluate if ballast water can be taken from shore reception facilities.</li>
+                    <li>If shore facilities are required, notify the port authority via NOA and consult the local agent to confirm service availability.</li>
+                </ul>`;
+            } else if (depStatus === 'Compliant' && voyStatus !== 'Normal' && !envSafe) {
+                risk = "Warning";
+                advice = `<ul class="action-list mb-0">
+                    <li>Seek assistance from the Technical Department to restore BWMS functionality as soon as possible.</li>
+                    <li>Considering vessel stability, evaluate whether cargo can be unloaded without ballasting.</li>
+                    <li>Evaluate if ballast water can be taken from shore reception facilities.</li>
+                    <li>If shore facilities are required, notify the port authority via NOA and consult the local agent to confirm service availability.</li>
+                </ul>`;
+            } else if (depStatus === 'Violation' && voyStatus === 'Normal' && envSafe) {
+                risk = "Attention";
+                advice = `<ul class="action-list mb-0">
+                    <li>Discharge D1 ballast water at an appropriate location during the voyage.</li>
+                    <li>Ensure all onboard ballast water meets the D2 standard before arrival.</li>
+                </ul>`;
+            } else if (depStatus === 'Violation' && voyStatus === 'Normal' && !envSafe) {
+                risk = "Warning";
+                advice = `<ul class="action-list mb-0">
+                    <li>Discharge D1 ballast water at an appropriate location during the voyage.</li>
+                    <li>Ensure all onboard ballast water meets the D2 standard before arrival.</li>
+                    <li>Refer to the Environment Warnings and checklists provided above.</li>
+                </ul>`;
+            } else if (depStatus === 'Violation' && voyStatus !== 'Normal' && envSafe) {
+                risk = "Warning";
+                advice = `<ul class="action-list mb-0">
+                    <li>Seek assistance from the Technical Department to restore BWMS functionality as soon as possible.</li>
+                    <li>Considering vessel stability, evaluate whether cargo can be unloaded without ballasting.</li>
+                    <li>Evaluate if ballast water can be taken from shore reception facilities.</li>
+                    <li>If shore facilities are required, notify the port authority via NOA and consult the local agent to confirm service availability.</li>
+                </ul>`;
+            } else if (depStatus === 'Violation' && voyStatus !== 'Normal' && !envSafe) {
+                risk = "Warning";
+                advice = `<ul class="action-list mb-0">
+                    <li>Seek assistance from the Technical Department to restore BWMS functionality as soon as possible.</li>
+                    <li>Considering vessel stability, evaluate whether cargo can be unloaded without ballasting.</li>
+                    <li>Evaluate if ballast water can be taken from shore reception facilities.</li>
+                    <li>If shore facilities are required, notify the port authority via NOA and consult the local agent to confirm service availability.</li>
+                </ul>`;
+            }
+        }
+
+        displayResult(risk, depStatus, envSafe, warnings, advice);
+    }
+
+    function displayResult(risk, depStatus, envSafe, warnings, advice) {
+        const section = document.getElementById('resultSection');
+        const light = document.getElementById('riskLight');
+        section.classList.remove('hidden');
+        
+        document.getElementById('riskTitle').textContent = risk.toUpperCase();
+        light.className = "text-center mb-4 risk-" + risk.toLowerCase();
+        
+        document.getElementById('statusDeparture').innerHTML = "<strong>Departure Status:</strong> " + depStatus;
+        document.getElementById('statusEnv').innerHTML = "<strong>Destination Environment:</strong> " + (envSafe ? "Safe" : "Dangerous (See warnings below)");
+        
+        const warnDiv = document.getElementById('envWarnings');
+        if (warnings.length > 0) {
+            warnDiv.classList.remove('hidden');
+            // 將警告訊息用水平線隔開，版面更乾淨
+            warnDiv.innerHTML = "<h5 class='alert-heading mb-3'>Environment Warnings & Checklists:</h5>" + warnings.join("<hr class='my-3'>");
+        } else {
+            warnDiv.classList.add('hidden');
+        }
+        
+        document.getElementById('actionAdvice').innerHTML = "<h5 class='alert-heading mb-2'>Recommended Actions:</h5>" + advice;
+        
+        setTimeout(() => {
+            section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
+    }
+</script>
+
+</body>
+</html>
