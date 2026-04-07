@@ -561,7 +561,9 @@
                     // 4. 將圖片寫入 jsPDF 並處理分頁
                     const { jsPDF } = window.jspdf;
                     const pdf = new jsPDF('p', 'mm', 'a4');
-                    const imgData = canvas.toDataURL('image/png');
+                    
+                    // 【關鍵修改】：改用 jpeg 格式，並設定品質為 0.95 (0~1之間，兼顧畫質與容量)
+                    const imgData = canvas.toDataURL('image/jpeg', 0.95); 
                     
                     const pageWidth = 210;
                     const pageHeight = 297;
@@ -570,15 +572,15 @@
                     let heightLeft = imgHeight;
                     let position = 0;
 
-                    // 寫入第一頁
-                    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                    // 寫入第一頁，標記改為 JPEG
+                    pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
                     heightLeft -= pageHeight;
 
                     // 若內容超出一頁，自動新增頁面
                     while (heightLeft > 0) {
                         position = heightLeft - imgHeight;
                         pdf.addPage();
-                        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                        pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight); // 標記改為 JPEG
                         heightLeft -= pageHeight;
                     }
 
