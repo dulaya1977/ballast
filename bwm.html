@@ -73,7 +73,7 @@
             padding: 3rem 0;
         }
         .scroll-wrapper {
-            position: relative; /* 確保右側導航列計算 offsetTop 時絕對精準 */
+            position: relative; 
             overflow-y: auto;
             height: calc(100vh - var(--navbar-height));
             scroll-behavior: smooth;
@@ -386,21 +386,12 @@
                                         </select>
 
                                         <div class="row mt-3 d-none" id="cwqQ2Container">
-                                            <div class="col-md-6">
-                                                <label class="form-label required">Was all D1 water taken during cargo discharge?</label>
-                                                <select class="form-select" id="cwqD1_q2">
-                                                    <option value="">Select...</option>
-                                                    <option value="Yes">Yes</option>
-                                                    <option value="No">No</option>
-                                                    <option value="Not All">Not All</option>
-                                                </select>
-                                            </div>
-                                            <div class="col-md-6 mt-3 mt-md-0">
-                                                <label class="form-label required">Reason for taking D1 water?</label>
+                                            <div class="col-md-12">
+                                                <label class="form-label required">Reason why taking D1 water without BWMC?</label>
                                                 <select class="form-select" id="cwqD1_q3">
                                                     <option value="">Select...</option>
-                                                    <option value="UV-T was too low">UV-T was too low</option>
-                                                    <option value="Turbidity was too high">Turbidity was too high</option>
+                                                    <option value="UV-T was too high (apply to all D1)">UV-T was too high (apply to all D1)</option>
+                                                    <option value="Turbidity was too high (apply to all D1)">Turbidity was too high (apply to all D1)</option>
                                                     <option value="Others">Others</option>
                                                 </select>
                                             </div>
@@ -635,18 +626,14 @@
         function toggleCwqFollowUp() {
             const val = document.getElementById('cwqD1').value;
             const q2Container = document.getElementById('cwqQ2Container');
-            const q2 = document.getElementById('cwqD1_q2');
             const q3 = document.getElementById('cwqD1_q3');
 
             if (val === 'Unknown') {
                 q2Container.classList.remove('d-none');
-                q2.required = true;
                 q3.required = true;
             } else {
                 q2Container.classList.add('d-none');
-                q2.required = false;
                 q3.required = false;
-                q2.value = "";
                 q3.value = "";
             }
         }
@@ -1132,9 +1119,8 @@
                     if (q1 === 'Yes') d1CwqCompliant = true;
                     else if (q1 === 'No') d1CwqCompliant = false;
                     else if (q1 === 'Unknown') {
-                        const q2 = document.getElementById('cwqD1_q2').value;
                         const q3 = document.getElementById('cwqD1_q3').value;
-                        if (q2 === 'Yes' && q3 !== 'Others' && q3 !== '') d1CwqCompliant = true;
+                        if (q3 !== 'Others' && q3 !== '') d1CwqCompliant = true;
                     }
                 }
 
@@ -1204,39 +1190,7 @@
                 
                 globalRisk = result.risk;
                 
-                const now = new Date();
-                const reportTimeUTC = now.toISOString().replace('T', ' ').substring(0, 19) + ' UTC';
-
-                const payload = {
-                    action: 'saveAssessment',
-                    reportTime: reportTimeUTC,
-                    vesselName: document.getElementById('vesselName').value,
-                    voyageNo: document.getElementById('voyageNo').value,
-                    etd: document.getElementById('etd').value,
-                    depCountry: document.getElementById('depCountry').value,
-                    depPort: document.getElementById('depPort').value,
-                    d1Vol: d1,
-                    d2Vol: d2,
-                    waterGrade: globalWaterGrade,
-                    depTestTime: document.getElementById('depTestTime').value,
-                    depTestResult: depStatusRaw,
-                    eta: document.getElementById('eta').value,
-                    destCountry: destCountry,
-                    destPort: actualDestPort,
-                    cargoOps: cargoOps,
-                    destTemp: destTemp,
-                    destDensity: density,
-                    destSalinity: document.getElementById('destSalinity').value,
-                    destUVT: document.getElementById('destUVT').value,
-                    envIndex: globalEnvIndex,
-                    masterName: document.getElementById('masterName').value,
-                    coName: document.getElementById('coName').value,
-                    ceName: document.getElementById('ceName').value,
-                    destPortRisk: globalRisk
-                };
-
-                await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(payload) });
-
+                
                 displayResult(result.risk, globalWaterGrade, globalEnvIndex, envWarnings, result.advice + reliabilityAdvice);
 
             } catch (error) {
