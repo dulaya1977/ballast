@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BallaSafe - Failure Report & CWQ Assessment</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        :root {
+            --primary: #0056b3;
+            --primary-light: #e9f2fc;
+            --success: #28a745;
+            --warning: #ffc107;
+            --danger: #dc3545;
+            --gray-100: #f8f9fa;
+            --gray-200: #e9ecef;
+            --text-dark: #212529;
+            --shadow-sm: 0 2px 8px rgba(0, 68, 136, 0.08);
+            --shadow-md: 0 4px 16px rgba(0, 68, 136, 0.12);
+            --radius-md: 10px;
+            --navbar-height: 60px;
+        }
+        body {
+            background-color: var(--gray-100);
+            color: var(--text-dark);
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            padding-top: var(--navbar-height); 
+        }
+        .top-navbar {
+            height: var(--navbar-height);
+            background: linear-gradient(135deg, #030b1c, #0A2463, #020612);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 2rem; position: fixed; top: 0; width: 100%; z-index: 1000;
+        }
+        .brand-logo {
+            font-size: 1.4rem; font-weight: 700; color: #E3E3E3; text-decoration: none;
+            display: flex; align-items: center; gap: 0.6rem; transition: all 0.3s;
+        }
+        .brand-logo:hover { color: #ffffff; text-shadow: 0 0 15px rgba(255,255,255,0.6); }
+        
+        .nav-links { display: flex; gap: 1rem; align-items: center; }
+        .nav-links a.btn-danger { color: #fff !important; border: 1px solid var(--danger); }
+        .nav-links a.btn-danger:hover { background: #c82333; box-shadow: 0 0 12px rgba(220, 53, 69, 0.6) !important; transform: translateY(-1px); }
+        .nav-links a.btn-outline-light { color: #fff !important; border: 1px solid rgba(255,255,255,0.5); }
+        .nav-links a.btn-outline-light:hover { background: #fff !important; color: #000 !important; }
+
+        .page-title { text-align: center; margin: 2.5rem 0; color: var(--primary); font-weight: 600; }
+        
+        /* Form Styles */
+        .card { border: none; border-radius: var(--radius-md); box-shadow: var(--shadow-sm); margin-bottom: 2rem; }
+        .section-title {
+            background: linear-gradient(135deg, var(--primary), #0066cc); color: white; 
+            padding: 1rem 1.5rem; font-weight: 500; font-size: 1.1rem;
+        }
+        .section-title.part7-title { background: linear-gradient(135deg, #17a2b8, #117a8b); }
+        .card-body { padding: 2rem; }
+        .form-label.required::after { content: " *"; color: var(--danger); }
+        
+        .cwq-result-box { border-radius: var(--radius-md); padding: 1.5rem; margin-top: 1.5rem; border-left: 5px solid; }
+        .cwq-eligible { background-color: rgba(40, 167, 69, 0.08); border-left-color: #28a745; }
+        .cwq-ineligible { background-color: rgba(220, 53, 69, 0.08); border-left-color: #dc3545; }
+        .cwq-result-title { font-weight: 700; font-size: 1.25rem; margin-bottom: 1rem; }
+        .cwq-eligible .cwq-result-title { color: #28a745; }
+        .cwq-ineligible .cwq-result-title { color: #dc3545; }
+    </style>
+</head>
+<body>
+
+    <nav class="top-navbar">
+        <a href="index.html" class="brand-logo">
+            <i class="fa fa-shield"></i> BallaSafe
+        </a>
+        <div class="nav-links">
+            <a href="bwm.html" class="btn btn-sm btn-outline-light fw-bold shadow-sm">
+                <i class="fa fa-plus"></i> New Assessment
+            </a>
+            <a href="bwm2.html" class="btn btn-sm btn-danger fw-bold shadow">
+                <i class="fa fa-exclamation-circle"></i> Report Failure
+            </a>
+        </div>
+    </nav>
+
+    <div class="container px-4">
+        <h2 class="page-title">BWMC Failure Report & CWQ Applicability Assessment</h2>
+
+        <form id="failForm" novalidate>
+            <div class="card">
+                <div class="section-title"><i class="fa fa-ship"></i> Part 1: Voyage Information</div>
+                <div class="card-body row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label required">Vessel Name</label>
+                        <select class="form-select" id="vesselName" required><option value="">Loading vessels...</option></select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Voyage Number</label>
+                        <input type="text" class="form-control" id="voyageNo">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label required">Report Date</label>
+                        <input type="date" class="form-control bg-light" id="reportDate" required readonly>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Master</label>
+                        <input type="text" class="form-control" id="masterName">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Chief Officer</label>
+                        <input type="text" class="form-control" id="coName">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Chief Engineer</label>
+                        <input type="text" class="form-control" id="ceName">
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="section-title">
+                    <i class="fa fa-sliders"></i> Part 2: BWMS Operating Limits
+                    <button type="button" class="btn btn-sm btn-outline-light ms-auto fw-bold" onclick="importBwmsSpec()" id="btnImport"><i class="fa fa-download"></i> Import Spec</button>
+                </div>
+                <div class="card-body row g-3">
+                    <div class="col-md-4"><label class="form-label">Maker</label><input type="text" class="form-control" id="bwmsMaker"></div>
+                    <div class="col-md-4"><label class="form-label">Model</label><input type="text" class="form-control" id="bwmsModel"></div>
+                    <div class="col-md-4">
+                        <label class="form-label required">BWMS Type</label>
+                        <select class="form-select" id="bwmsType" required onchange="toggleLimitFields()">
+                            <option value="">Select Type</option>
+                            <option value="Electrolysis">Electrolysis</option>
+                            <option value="Chemical">Chemical Injection</option>
+                            <option value="UV">UV System</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4"><label class="form-label required">Min Temperature (°C)</label><input type="number" step="any" class="form-control" id="minTemp" required></div>
+                    <div class="col-md-4"><label class="form-label required">Max Temperature (°C)</label><input type="number" step="any" class="form-control" id="maxTemp" required></div>
+                    <div class="col-md-4"><label class="form-label required" title="Refer to O&M Manual or TAC SDL">Max DP (bar)</label><input type="number" step="any" class="form-control" id="maxDp" required placeholder="e.g., 0.5"></div>
+                    
+                    <div class="col-md-4 d-none" id="salField"><label class="form-label required">Min Salinity (PSU)</label><input type="number" step="any" class="form-control" id="minSalinity"></div>
+                    <div class="col-md-4 d-none" id="uvtField"><label class="form-label required">Min UV-T (%)</label><input type="number" step="any" class="form-control" id="minUVT"></div>
+                </div>
+            </div>
+
+            <div class="card border-danger">
+                <div class="section-title" style="background: linear-gradient(135deg, #dc3545, #a71d2a);"><i class="fa fa-wrench"></i> Part 6: BWMC Failure Report</div>
+                <div class="card-body row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label required">BWMS Failure Time (Local Time)</label>
+                        <input type="datetime-local" class="form-control" id="failTime" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label required">Failure Location</label>
+                        <select class="form-select" id="failLocType" required onchange="toggleFailLoc()">
+                            <option value="">Select...</option>
+                            <option value="At Sea">At Sea</option>
+                            <option value="At Port">At Port</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4"></div>
+
+                    <div class="col-md-6 d-none loc-sea"><label class="form-label required">Latitude</label><input type="text" class="form-control" id="failLat" placeholder="e.g., 34° 05' N"></div>
+                    <div class="col-md-6 d-none loc-sea"><label class="form-label required">Longitude</label><input type="text" class="form-control" id="failLon" placeholder="e.g., 118° 14' W"></div>
+                    
+                    <div class="col-md-6 d-none loc-port"><label class="form-label required">Port Name (Port / Country)</label><input type="text" class="form-control" id="failPort" placeholder="e.g., Los Angeles / USA"></div>
+                    <div class="col-md-6 d-none loc-port">
+                        <label class="form-label required">Cargo Operation</label>
+                        <select class="form-select" id="failCargoOps">
+                            <option value="">Select...</option>
+                            <option value="Loading">Loading</option>
+                            <option value="Discharging">Discharging</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-12 mt-4">
+                        <label class="form-label required text-danger fw-bold">Major Cause of Failure</label>
+                        <select class="form-select border-danger" id="majorCause" required>
+                            <option value="">Select Primary Cause...</option>
+                            <option value="temp_fail">Temperature out of limit</option>
+                            <option value="sal_fail">Salinity out of limit</option>
+                            <option value="uvt_low">UV-T too low</option>
+                            <option value="turbidity_high">Turbidity too high</option>
+                            <option value="tro_fail">TRO neutralization failure</option>
+                            <option value="chem_fail">Chemical agents issue</option>
+                            <option value="equip_fail">Equipment malfunction / Self-failure</option>
+                        </select>
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label">Remarks / Additional Message</label>
+                        <textarea class="form-control" id="remarks" rows="3" placeholder="Leave any additional details here..."></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-grid mb-5">
+                <button type="button" class="btn btn-danger btn-lg py-3 fw-bold shadow" onclick="evaluateCWQ()">
+                    <i class="fa fa-stethoscope"></i> Evaluate CWQ Applicability
+                </button>
+            </div>
+        </form>
+
+        <div id="resultSection" class="card d-none shadow-lg mb-5">
+            <div class="section-title part7-title"><i class="fa fa-check-square-o"></i> Part 7: CWQ Applicability Assessment & Advice</div>
+            <div class="card-body" id="cwqDisplay"></div>
+            <div class="card-footer bg-white p-4">
+                <button type="button" id="btnAck" class="btn btn-success btn-lg w-100 py-3 fw-bold" onclick="submitFailure()">
+                    <i class="fa fa-check-square-o"></i> I Acknowledge, Save Data & Download PDF
+                </button>
+            </div>
+        </div>
+        <div class="pb-5"></div>
+    </div>
+
+    <script>
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbxyqcwI2WYaUr5YqzSUVJDsSy7zp2VcGSZrUXVntXY-SrrnzxMWYy3YwDZ1E4HUd2hP/exec";
+        let globalCWQStatus = ""; 
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('reportDate').value = new Date().toISOString().split('T')[0];
+            
+            // 載入船隻列表
+            fetch(GAS_URL)
+                .then(response => response.json())
+                .then(data => {
+                    const vSelect = document.getElementById('vesselName');
+                    if(data.vesselList && data.vesselList.length > 0) {
+                        vSelect.innerHTML = '<option value="">Select Vessel</option>';
+                        data.vesselList.forEach(v => vSelect.appendChild(new Option(v, v)));
+                    } else {
+                        vSelect.innerHTML = '<option value="">No vessels found in database</option>';
+                    }
+                })
+                .catch(e => {
+                    console.error("Failed to load vessels", e);
+                    document.getElementById('vesselName').innerHTML = '<option value="">Error loading database</option>';
+                });
+        });
+
+        function toggleLimitFields() {
+            const type = document.getElementById('bwmsType').value;
+            document.getElementById('salField').classList.toggle('d-none', type !== 'Electrolysis');
+            document.getElementById('minSalinity').required = (type === 'Electrolysis');
+            
+            document.getElementById('uvtField').classList.toggle('d-none', type !== 'UV');
+            document.getElementById('minUVT').required = (type === 'UV');
+        }
+
+        function toggleFailLoc() {
+            const loc = document.getElementById('failLocType').value;
+            const isSea = (loc === 'At Sea');
+            const isPort = (loc === 'At Port');
+            
+            document.querySelectorAll('.loc-sea').forEach(el => el.classList.toggle('d-none', !isSea));
+            document.getElementById('failLat').required = isSea;
+            document.getElementById('failLon').required = isSea;
+
+            document.querySelectorAll('.loc-port').forEach(el => el.classList.toggle('d-none', !isPort));
+            document.getElementById('failPort').required = isPort;
+            document.getElementById('failCargoOps').required = isPort;
+        }
+
+        async function importBwmsSpec() {
+            const vesselName = document.getElementById('vesselName').value;
+            if (!vesselName) { alert("Please select a Vessel Name first."); return; }
+            const btn = document.getElementById('btnImport');
+            btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i>...';
+            try {
+                const response = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({action: 'getBwmsSpec', vesselName: vesselName}) });
+                const res = await response.json();
+                if (res.status === 'success' && res.data) {
+                    document.getElementById('bwmsMaker').value = res.data.maker || '';
+                    document.getElementById('bwmsModel').value = res.data.model || '';
+                    document.getElementById('bwmsType').value = res.data.type || '';
+                    toggleLimitFields();
+                    document.getElementById('minTemp').value = res.data.minTemp || '';
+                    document.getElementById('maxTemp').value = res.data.maxTemp || '';
+                    document.getElementById('maxDp').value = res.data.maxDp || '';
+                    if (res.data.type === 'Electrolysis') document.getElementById('minSalinity').value = res.data.minSalinity || '';
+                    if (res.data.type === 'UV') document.getElementById('minUVT').value = res.data.minUvt || '';
+                } else alert("No spec found for this vessel.");
+            } catch(e) {
+                console.error(e);
+                alert("Failed to retrieve spec.");
+            }
+            btn.innerHTML = '<i class="fa fa-download"></i> Import Spec';
+        }
+
+        function evaluateCWQ() {
+            const form = document.getElementById('failForm');
+            if (!form.checkValidity()) { form.reportValidity(); return; }
+
+            const loc = document.getElementById('failLocType').value;
+            const cargoOps = document.getElementById('failCargoOps').value;
+            const cause = document.getElementById('majorCause').value;
+
+            const isEligible = (loc === 'At Port' && cargoOps === 'Discharging' && (cause === 'uvt_low' || cause === 'turbidity_high'));
+            globalCWQStatus = isEligible ? "Applicable" : "Not Applicable";
+
+            const display = document.getElementById('cwqDisplay');
+            let html = "";
+
+            if (isEligible) {
+                html = `
+                    <div class="cwq-result-box cwq-eligible mb-0">
+                        <div class="cwq-result-title"><i class="fa fa-check-circle"></i> CWQ APPLICABLE (適合引用CWQ)</div>
+                        <ul class="list-unstyled ps-2 mb-0" style="line-height: 1.8;">
+                            <li><i class="fa fa-angle-right text-success me-2"></i><strong>Action:</strong> Initiate "Bypass" immediately. No prior notification to the Port State is required.</li>
+                            <li><i class="fa fa-angle-right text-success me-2"></i><strong>Verification:</strong> Ensure the system automatically triggered the <em>Filter Differential Pressure High Alarm</em> and forced a shutdown. This alarm MUST be logged in the BWMS Event Log and accurately detailed in the BWRB.</li>
+                            <li class="text-danger fw-bold mt-2"><i class="fa fa-ban me-2"></i>STRICT PROHIBITION: Do NOT conduct a pre-emptive bypass based on anticipated poor water quality before the alarm automatically triggers! (Ref: MEPC 81/16/Add.1, Annex 5, page 6, paragraph 19).</li>
+                            <li class="mt-2"><i class="fa fa-angle-right text-success me-2"></i><strong>Mitigation:</strong> Prior to discharge at the next port, the vessel must conduct Ballast Water Exchange (BWE) in the deep sea and re-treat the water via BWTS until D-2 compliance is restored.</li>
+                            <li><i class="fa fa-angle-right text-success me-2"></i><strong>Notification:</strong> Notify the Next Port Authority. (Do not panic, this is completely legal!)</li>
+                        </ul>
+                    </div>`;
+            } else {
+                html = `
+                    <div class="cwq-result-box cwq-ineligible mb-0">
+                        <div class="cwq-result-title"><i class="fa fa-exclamation-triangle"></i> CWQ NOT APPLICABLE (不適合引用CWQ)</div>
+                        <ul class="list-unstyled ps-2 mb-3" style="line-height: 1.8;">
+                            <li><i class="fa fa-angle-right text-danger me-2"></i><strong>Action:</strong> Initiate "Bypass" immediately and notify the Flag State and Port State.</li>
+                            <li><i class="fa fa-angle-right text-danger me-2"></i><strong>Verification:</strong> Ensure this failure or malfunction is accurately recorded in the BWRB.</li>
+                            <li><i class="fa fa-angle-right text-danger me-2"></i><strong>Company:</strong> Notify the company immediately to initiate repairs.</li>
+                            <li><i class="fa fa-angle-right text-danger me-2"></i><strong>Notification:</strong> Notify the Next Port Authority AS SOON AS POSSIBLE and submit a Decontamination Plan for their review.</li>
+                            <li><i class="fa fa-angle-right text-danger me-2"></i><strong>Mitigation:</strong> Strictly follow the approved plan or specific instructions issued by the Next Port Authority for decontamination.</li>
+                        </ul>
+                        <div class="p-3 bg-white border border-danger rounded">
+                            <strong class="text-danger"><i class="fa fa-warning"></i> CRITICAL WARNING:</strong><br>
+                            Do not be overconfident and assume that exchanging water to D2 via BWE before the next port guarantees permission to discharge. Since CWQ is not applicable, bypassing D1 is already a violation. The next PSC may refuse discharge.<br><br>
+                            <strong>If PSC Disagrees:</strong> Do not discharge. You must implement contingency measures: Retain on Board (ROB) or arrange for a Shore Reception Facility (SRF) at the destination.<br><br>
+                            <em>Final Warning: Forcibly discharging non-compliant "D1" water without the next port authority’s permission fundamentally violates the spirit of the BWM Convention and must be approached with extreme caution.</em>
+                        </div>
+                    </div>`;
+            }
+
+            display.innerHTML = html;
+            document.getElementById('resultSection').classList.remove('d-none');
+            document.getElementById('resultSection').scrollIntoView({behavior: 'smooth', block: 'start'});
+        }
+
+        async function submitFailure() {
+            const btn = document.getElementById('btnAck');
+            btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Saving & Generating PDF (Please wait, this may take up to 3 minutes)...';
+            btn.disabled = true;
+
+            const now = new Date();
+            const reportTimeUTC = now.toISOString().replace('T', ' ').substring(0, 19) + ' UTC';
+            
+            const payload = {
+                action: 'saveFailureReport',
+                reportTime: reportTimeUTC,
+                vesselName: document.getElementById('vesselName').value || '',
+                voyageNo: document.getElementById('voyageNo').value || '',
+                failureTime: document.getElementById('failTime').value || '',
+                failureLocType: document.getElementById('failLocType').value || '',
+                lat: document.getElementById('failLat').value || '',
+                lon: document.getElementById('failLon').value || '',
+                failurePort: document.getElementById('failPort').value || '',
+                cargoOps: document.getElementById('failCargoOps').value || '',
+                majorCause: document.getElementById('majorCause').options[document.getElementById('majorCause').selectedIndex].text || '',
+                cwqApp: globalCWQStatus || ''
+            };
+
+            try {
+                // Background Save to GAS
+                fetch(GAS_URL, { method: 'POST', body: JSON.stringify(payload) }).catch(e => console.error(e));
+                
+                // Wait for PDF to generate (with the fix applied)
+                await generatePDF(payload);
+
+                btn.innerHTML = `<i class="fa fa-check"></i> Processed Successfully`;
+                btn.classList.remove('btn-success');
+                btn.classList.add('btn-secondary');
+            } catch(e) {
+                console.error(e);
+                btn.innerHTML = `<i class="fa fa-warning"></i> Error generating PDF. Click to Retry.`;
+                btn.disabled = false;
+            }
+        }
+
+        // ================= PDF 產生邏輯 (加入強制渲染的隱藏元素修復法) =================
+       function generatePDF(data) {
+            return new Promise(async (resolve, reject) => {
+                try {
+                    // 1. 處理 Part 6 的動態欄位邏輯
+                    let dynamicLabel1 = "", dynamicValue1 = "";
+                    let dynamicLabel2 = "", dynamicValue2 = "";
+
+                    if (data.failureLocType === 'At Sea') {
+                        dynamicLabel1 = "Latitude:";
+                        dynamicValue1 = data.lat || '';
+                        dynamicLabel2 = "Longitude:";
+                        dynamicValue2 = data.lon || '';
+                    } else if (data.failureLocType === 'At Port') {
+                        dynamicLabel1 = "Port Name:";
+                        dynamicValue1 = data.failurePort || '';
+                        dynamicLabel2 = "Cargo Operation:";
+                        let op = data.cargoOps;
+                        if (op === 'Loading') op = 'Loading cargo';
+                        if (op === 'Discharging') op = 'Discharging cargo';
+                        dynamicValue2 = op || '';
+                    }
+
+                    // 取得 Part 7 的結果 HTML
+                    const adviceHTML = document.getElementById('cwqDisplay').innerHTML;
+
+                    // 2. 建立專屬於 PDF 的乾淨 DOM 結構
+                    const pdfContainer = document.createElement('div');
+                    pdfContainer.style.width = '210mm'; // 鎖定 A4 寬度基準
+                    pdfContainer.style.minHeight = '297mm'; // 【關鍵】鎖定 A4 高度基準
+                    pdfContainer.style.padding = '20mm'; // 設定天地左右邊界
+                    pdfContainer.style.background = '#ffffff';
+                    pdfContainer.style.color = '#333333';
+                    pdfContainer.style.fontFamily = 'Arial, sans-serif';
+                    pdfContainer.style.position = 'absolute';
+                    pdfContainer.style.left = '-9999px'; // 藏在畫面外
+                    pdfContainer.style.top = '0';
+                    pdfContainer.style.boxSizing = 'border-box';
+                    pdfContainer.style.display = 'flex'; // 【關鍵】啟用 Flex 排版
+                    pdfContainer.style.flexDirection = 'column'; // 垂直排列
+
+                    // 組合你指定的版面內容 (已將主要內容包在 flex: 1 的 div 中)
+                    pdfContainer.innerHTML = `
+                        <div style="flex: 1;">
+                            <div style="text-align: center; border-bottom: 3px solid #0056b3; padding-bottom: 15px; margin-bottom: 25px;">
+                                <h1 style="color: #0056b3; margin: 0; font-size: 32px; font-weight: 700;">BallaSafe</h1>
+                                <h4 style="margin: 8px 0 0 0; color: #555; font-size: 18px;">BWMC Failure Report & CWQ Assessment</h4>
+                            </div>
+
+                            <div style="margin-bottom: 20px;">
+                                <h5 style="background-color: #e9f2fc; padding: 10px; border-left: 4px solid #0056b3; margin-bottom: 10px; font-size: 16px; font-weight:bold; margin-top:0;">Part 1: Voyage Information</h5>
+                                <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                                    <tr>
+                                        <td style="padding: 8px; width: 20%;"><strong>Ship Name:</strong></td>
+                                        <td style="padding: 8px; width: 30%; border-bottom: 1px solid #ddd;">${data.vesselName || ''}</td>
+                                        <td style="padding: 8px; width: 20%;"><strong>Voyage No.:</strong></td>
+                                        <td style="padding: 8px; width: 30%; border-bottom: 1px solid #ddd;">${data.voyageNo || ''}</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 8px;"><strong>Report Date:</strong></td>
+                                        <td style="padding: 8px; border-bottom: 1px solid #ddd;">${document.getElementById('reportDate').value || ''}</td>
+                                        <td style="padding: 8px;"><strong>Master Name:</strong></td>
+                                        <td style="padding: 8px; border-bottom: 1px solid #ddd;">${document.getElementById('masterName').value || ''}</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 8px;"><strong>C/O Name:</strong></td>
+                                        <td style="padding: 8px; border-bottom: 1px solid #ddd;">${document.getElementById('coName').value || ''}</td>
+                                        <td style="padding: 8px;"><strong>C/E Name:</strong></td>
+                                        <td style="padding: 8px; border-bottom: 1px solid #ddd;">${document.getElementById('ceName').value || ''}</td>
+                                    </tr>
+                                </table>
+                            </div>
+
+                            <div style="margin-bottom: 20px;">
+                                <h5 style="background-color: #e9f2fc; padding: 10px; border-left: 4px solid #0056b3; margin-bottom: 10px; font-size: 16px; font-weight:bold; margin-top:0;">Part 2: BWMS Operating Limits</h5>
+                                <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                                    <tr>
+                                        <td style="padding: 8px; width: 20%;"><strong>BWMS Maker:</strong></td>
+                                        <td style="padding: 8px; width: 30%; border-bottom: 1px solid #ddd;">${document.getElementById('bwmsMaker').value || ''}</td>
+                                        <td style="padding: 8px; width: 20%;"><strong>Type:</strong></td>
+                                        <td style="padding: 8px; width: 30%; border-bottom: 1px solid #ddd;">${document.getElementById('bwmsType').value || ''}</td>
+                                    </tr>
+                                </table>
+                            </div>
+
+                            <div style="margin-bottom: 20px;">
+                                <h5 style="background-color: #ffeeba; padding: 10px; border-left: 4px solid #ffc107; margin-bottom: 10px; font-size: 16px; font-weight:bold; margin-top:0;">Part 6: Failure Details</h5>
+                                <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                                    <tr>
+                                        <td style="padding: 8px; width: 20%;"><strong>Failure Time:</strong></td>
+                                        <td style="padding: 8px; width: 30%; border-bottom: 1px solid #ddd;">${data.failureTime ? data.failureTime.replace('T', ' ') : ''}</td>
+                                        <td style="padding: 8px; width: 20%;"><strong>Failure Location:</strong></td>
+                                        <td style="padding: 8px; width: 30%; border-bottom: 1px solid #ddd;">${data.failureLocType || ''}</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 8px;"><strong>${dynamicLabel1}</strong></td>
+                                        <td style="padding: 8px; border-bottom: 1px solid #ddd;">${dynamicValue1}</td>
+                                        <td style="padding: 8px;"><strong>${dynamicLabel2}</strong></td>
+                                        <td style="padding: 8px; border-bottom: 1px solid #ddd;">${dynamicValue2}</td>
+                                    </tr>
+                                </table>
+                            </div>
+
+                            <div style="margin-bottom: 20px;">
+                                <h5 style="background-color: #e8f5e9; padding: 10px; border-left: 4px solid #28a745; margin-bottom: 10px; font-size: 16px; font-weight:bold; margin-top:0;">Part 7: CWQ Assessment Result</h5>
+                                <div style="padding: 15px; border: 1px solid #dee2e6; background-color: #fcfcfc; border-radius: 6px;">
+                                    ${adviceHTML.replace(/mt-2/g, '').replace(/mb-3/g, 'margin-bottom:10px;').replace(/mb-0/g, 'margin-bottom:0;')}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="text-align: right; margin-top: auto; font-size: 12px; color: #888; border-top: 1px solid #eee; padding-top: 10px; padding-bottom: 5px;">
+                            Report generated by BallaSafe System. Timestamp: ${data.reportTime}
+                        </div>
+                    `;
+
+                    document.body.appendChild(pdfContainer);
+
+                    // 3. 呼叫 html2canvas 進行截圖
+                    const canvas = await html2canvas(pdfContainer, {
+                        scale: 2, // 提高解析度
+                        useCORS: true,
+                        logging: false,
+                        backgroundColor: '#ffffff'
+                    });
+
+                    document.body.removeChild(pdfContainer); // 清理 DOM
+
+                    // 4. 將圖片寫入 jsPDF 並處理分頁
+                    const { jsPDF } = window.jspdf;
+                    const pdf = new jsPDF('p', 'mm', 'a4');
+                    const imgData = canvas.toDataURL('image/png');
+                    
+                    const pageWidth = 210;
+                    const pageHeight = 297;
+                    const imgWidth = pageWidth;
+                    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                    let heightLeft = imgHeight;
+                    let position = 0;
+
+                    // 寫入第一頁
+                    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                    heightLeft -= pageHeight;
+
+                    // 若內容超出一頁，自動新增頁面
+                    while (heightLeft > 0) {
+                        position = heightLeft - imgHeight;
+                        pdf.addPage();
+                        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                        heightLeft -= pageHeight;
+                    }
+
+                    // 5. 儲存檔案
+                    const safeVesselName = (data.vesselName || 'Vessel').replace(/[^a-zA-Z0-9]/g, '_');
+                    pdf.save(`BallaSafe_FailureReport_${safeVesselName}_${document.getElementById('reportDate').value}.pdf`);
+                    
+                    resolve();
+                } catch (error) {
+                    console.error("PDF Generation Error:", error);
+                    reject(error);
+                }
+            });
+        }
+    </script>
+</body>
+</html>
