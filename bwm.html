@@ -67,6 +67,13 @@
         }
         .brand-logo i { color: #E3E3E3; font-size: 1.5rem; }
         .brand-logo:hover { color: #ffffff; text-shadow: 0 0 15px rgba(255, 255, 255, 0.6); }
+        .nav-links { display: flex; gap: 1rem; align-items: center; }
+        /* 強制導覽列內的按鈕維持小尺寸，蓋掉全域的大按鈕設定 */
+        .nav-links .btn { padding: 0.375rem 0.75rem !important; font-size: 0.875rem !important; border-radius: 0.25rem !important; line-height: 1.5 !important; }
+        .nav-links a.btn-danger { color: #fff !important; border: 1px solid var(--danger) !important; background: #dc3545 !important; }
+        .nav-links a.btn-danger:hover { background: #c82333 !important; box-shadow: 0 0 12px rgba(220, 53, 69, 0.6) !important; transform: translateY(-1px); }
+        .nav-links a.btn-outline-light { color: #fff !important; border: 1px solid rgba(255,255,255,0.5); }
+        .nav-links a.btn-outline-light:hover { background: #fff !important; color: #000 !important; }
 
         .section-container {
             min-height: calc(100vh - var(--navbar-height));
@@ -189,6 +196,14 @@
         <a href="index.html" class="brand-logo">
             <i class="fa fa-shield"></i> BallaSafe
         </a>
+        <div class="nav-links">
+            <a href="bwm.html" class="btn btn-sm btn-outline-light fw-bold shadow-sm">
+                <i class="fa fa-plus"></i> New Assessment
+            </a>
+            <a href="bwm2.html" class="btn btn-sm btn-danger fw-bold shadow">
+                <i class="fa fa-exclamation-circle"></i> Report Failure
+            </a>
+        </div>
     </nav>
 
     <div class="anchor-nav d-none d-lg-flex" id="anchorNavMenu">
