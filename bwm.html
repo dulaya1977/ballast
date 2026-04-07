@@ -1,0 +1,1556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BallaSafe - Pre-voyage BWMC Reliability Assessment</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        :root {
+            --primary: #0056b3;
+            --primary-light: #e9f2fc;
+            --success: #28a745;
+            --warning: #ffc107;
+            --danger: #dc3545;
+            --gray-100: #f8f9fa;
+            --gray-200: #e9ecef;
+            --gray-300: #dee2e6;
+            --text-dark: #212529;
+            --text-muted: #6c757d;
+            --shadow-sm: 0 2px 8px rgba(0, 68, 136, 0.08);
+            --shadow-md: 0 4px 16px rgba(0, 68, 136, 0.12);
+            --radius-sm: 6px;
+            --radius-md: 10px;
+            --radius-lg: 12px;
+            --transition: all 0.3s ease;
+            --navbar-height: 60px;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background-color: var(--gray-100);
+            color: var(--text-dark);
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            overflow-x: hidden;
+            padding-top: var(--navbar-height); 
+        }
+        
+        .top-navbar {
+            height: var(--navbar-height);
+            background: linear-gradient(135deg, #030b1c, #0A2463, #020612);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 2rem;
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .brand-logo {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #E3E3E3; 
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            letter-spacing: 1px;
+            text-shadow: 0 0 10px rgba(227, 227, 227, 0.3); 
+            transition: var(--transition);
+            cursor: pointer;
+        }
+        .brand-logo i { color: #E3E3E3; font-size: 1.5rem; }
+        .brand-logo:hover { color: #ffffff; text-shadow: 0 0 15px rgba(255, 255, 255, 0.6); }
+
+        .section-container {
+            min-height: calc(100vh - var(--navbar-height));
+            padding: 3rem 0;
+        }
+        .scroll-wrapper {
+            position: relative; /* 確保右側導航列計算 offsetTop 時絕對精準 */
+            overflow-y: auto;
+            height: calc(100vh - var(--navbar-height));
+            scroll-behavior: smooth;
+        }
+        .page-title {
+            text-align: center; margin-bottom: 2.5rem; color: var(--primary); font-weight: 600;
+            position: relative; padding-bottom: 0.8rem;
+        }
+        .page-title::after {
+            content: ''; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 80px; height: 3px;
+            background: linear-gradient(90deg, transparent, var(--primary), transparent); border-radius: 3px;
+        }
+        .card {
+            border: none; border-radius: var(--radius-lg); box-shadow: var(--shadow-md); overflow: hidden;
+            margin-bottom: 0; background-color: #fff; transition: var(--transition);
+        }
+        .card:hover { box-shadow: 0 6px 20px rgba(0, 68, 136, 0.15); }
+        
+        .section-title {
+            background: linear-gradient(135deg, var(--primary), #0066cc); color: white; padding: 1rem 1.5rem;
+            font-weight: 500; font-size: 1.1rem; display: flex; align-items: center; gap: 0.8rem;
+        }
+        .section-title i { font-size: 1.3rem; }
+        .section-title.part5-title { background: linear-gradient(135deg, #28a745, #20c997); }
+        .section-title.part2-1-title { background: linear-gradient(135deg, #17a2b8, #117a8b); }
+
+        .card-body { padding: 2rem; }
+        .form-label { font-weight: 500; color: var(--text-dark); margin-bottom: 0.5rem; }
+        .form-label.required::after { content: " *"; color: var(--danger); font-size: 0.9rem; }
+        .form-control, .form-select {
+            border: 1px solid var(--gray-300); border-radius: var(--radius-sm); padding: 0.75rem 1rem;
+            font-size: 0.95rem; transition: var(--transition); background-color: #fff;
+        }
+        .form-control:focus, .form-select:focus {
+            outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(0, 86, 179, 0.1);
+        }
+        .form-control[readonly] { background-color: var(--primary-light); border-color: var(--primary-light); cursor: default; }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), #0066cc); border: none; border-radius: var(--radius-md);
+            padding: 0.8rem 2rem; font-weight: 500; font-size: 1rem; box-shadow: var(--shadow-sm); transition: var(--transition);
+        }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); background: linear-gradient(135deg, #004a99, var(--primary)); }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, #dc3545, #a71d2a); border: none; border-radius: var(--radius-md);
+            padding: 0.8rem 2rem; font-weight: 500; font-size: 1rem; box-shadow: var(--shadow-sm); transition: var(--transition); color: white;
+        }
+        .btn-danger:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); background: linear-gradient(135deg, #c82333, #dc3545); color: white; }
+
+        .btn-info {
+            background: linear-gradient(135deg, #17a2b8, #117a8b); border: none; color: white;
+        }
+        .btn-info:hover { background: linear-gradient(135deg, #117a8b, #0d5c69); color: white; transform: translateY(-2px); box-shadow: var(--shadow-md); }
+
+        .btn-outline-secondary { border-radius: var(--radius-md); padding: 0.8rem 2rem; font-weight: 500; font-size: 1rem; transition: var(--transition); }
+
+        .smart-fetch-wrapper { width: 100%; }
+        .btn-fetch-ocean {
+            background: linear-gradient(135deg, #00d2ff, #0056b3); color: white; font-weight: 600;
+            border: none; border-radius: 30px; padding: 0.6rem 1.5rem; box-shadow: 0 4px 15px rgba(0, 210, 255, 0.4);
+            transition: all 0.3s;
+        }
+        .btn-fetch-ocean:hover:not(:disabled) {
+            background: linear-gradient(135deg, #0056b3, #00d2ff); transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 210, 255, 0.6); color: white;
+        }
+        .btn-fetch-ocean:disabled { opacity: 0.7; cursor: not-allowed; }
+        
+        .ocean-data-card {
+            background: linear-gradient(135deg, #0a1128, #101b3b); border: 1px solid rgba(0, 210, 255, 0.3);
+            border-radius: var(--radius-md); box-shadow: 0 0 15px rgba(0, 210, 255, 0.15); color: #e3e3e3;
+            transition: all 0.4s ease;
+        }
+        .ocean-data-card .data-value {
+            font-size: 1.6rem; font-weight: 700; color: #00d2ff; text-shadow: 0 0 8px rgba(0, 210, 255, 0.4);
+        }
+        .btn-apply-data {
+            background-color: rgba(0, 210, 255, 0.1); color: #00d2ff; border: 1px solid #00d2ff;
+            border-radius: 20px; padding: 0.3rem 1.2rem; transition: all 0.3s; font-size: 0.9rem; font-weight: 600;
+        }
+        .btn-apply-data:hover { background-color: #00d2ff; color: #0a1128; }
+        
+        .api-crosscheck-alert {
+            background-color: rgba(220, 53, 69, 0.15); border-left: 4px solid #dc3545;
+            color: #ffb3b3; padding: 1rem; border-radius: 4px; margin-top: 1rem; font-size: 0.9rem;
+        }
+
+        .risk-normal { background: linear-gradient(135deg, #28a745, #20c997); color: white; padding: 2rem; border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); text-align: center; }
+        .risk-attention { background: linear-gradient(135deg, #ffc107, #ffd333); color: #212529; padding: 2rem; border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); text-align: center; }
+        .risk-warning { background: linear-gradient(135deg, #dc3545, #e83e8c); color: white; padding: 2rem; border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); text-align: center; }
+        .risk-title { font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem; display: flex; align-items: center; justify-content: center; gap: 0.8rem; }
+        .risk-desc { font-size: 1.1rem; opacity: 0.9; }
+        
+        #resultSection .card { margin-top: 1.5rem; }
+        #resultSection .card-title { font-weight: 600; color: var(--primary); border-bottom: 1px solid var(--gray-200); padding-bottom: 0.8rem; margin-bottom: 1.5rem; }
+        .alert { border: none; border-radius: var(--radius-sm); box-shadow: var(--shadow-sm); padding: 1rem 1.25rem; }
+        .alert-warning { background-color: #fff3cd; color: #856404; }
+        .alert-info { background-color: var(--primary-light); color: var(--primary); }
+        ul.action-list { margin-top: 0.8rem; padding-left: 1.5rem; }
+        ul.action-list li { margin-bottom: 0.6rem; line-height: 1.7; }
+        
+        .anchor-nav { position: fixed; right: 2rem; top: 50%; transform: translateY(-50%); z-index: 999; display: flex; flex-direction: column; gap: 1rem; }
+        .anchor-nav a { width: 12px; height: 12px; border-radius: 50%; background-color: var(--gray-300); transition: var(--transition); display: block; position: relative; }
+        .anchor-nav a.active { background-color: var(--primary); transform: scale(1.3); }
+        .anchor-nav a:hover::after { content: attr(data-title); position: absolute; right: 20px; top: 50%; transform: translateY(-50%); background-color: var(--text-dark); color: white; padding: 0.3rem 0.8rem; border-radius: var(--radius-sm); font-size: 0.8rem; white-space: nowrap; }
+
+    </style>
+</head>
+<body>
+    
+    <nav class="top-navbar">
+        <a href="page2.html" class="brand-logo">
+            <i class="fa fa-shield"></i> BallaSafe
+        </a>
+    </nav>
+
+    <div class="anchor-nav d-none d-lg-flex" id="anchorNavMenu">
+        <a href="#part1" class="active" data-title="Voyage Info"></a>
+        <a href="#part2" data-title="BWMS Limits"></a>
+        <a href="#part3" data-title="Departure Info"></a>
+        <a href="#part4" data-title="Destination Info"></a>
+        <a href="#resultSection" id="navResultAnchor" data-title="Assessment Details"></a>
+    </div>
+
+    <div class="scroll-wrapper">
+        <div class="container px-4 mt-4">
+            <h1 class="page-title">Pre-voyage BWMC Reliability Assessment</h1>
+
+            <form id="bwmForm" novalidate>
+                <section id="part1" class="section-container" style="padding-bottom: 1.5rem; min-height: auto;">
+                    <div class="card">
+                        <div class="section-title"><i class="fa fa-ship"></i> Part 1: Voyage Information</div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label class="form-label required">Vessel Name</label>
+                                    <select class="form-select" id="vesselName" required><option value="">Fetching database, please wait...</option></select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Voyage Number</label>
+                                    <input type="text" class="form-control" id="voyageNo">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label required">Report Date</label>
+                                    <input type="date" class="form-control bg-light" id="reportDate" required readonly>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Master Name</label>
+                                    <input type="text" class="form-control" id="masterName">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Chief Officer Name</label>
+                                    <input type="text" class="form-control" id="coName">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Chief Engineer Name</label>
+                                    <input type="text" class="form-control" id="ceName">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="part2" class="section-container" style="padding-top: 1.5rem; padding-bottom: 1.5rem; min-height: auto;">
+                    <div class="card">
+                        <div class="section-title">
+                            <i class="fa fa-sliders"></i> Part 2: BWMS Operating Limits
+                            <div class="ms-auto d-flex gap-2">
+                                <button type="button" class="btn btn-sm btn-outline-light fw-bold px-3" id="btnImportSpec" onclick="importBwmsSpec()" title="Import specifications from database"><i class="fa fa-download"></i> Import Spec</button>
+                                <button type="button" class="btn btn-sm btn-outline-light fw-bold px-3" onclick="togglePart2_1()" title="Upload specifications to the database for this vessel"><i class="fa fa-upload"></i> Upload Spec</button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label class="form-label">Maker</label>
+                                    <input type="text" class="form-control" id="bwmsMaker">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Model</label>
+                                    <input type="text" class="form-control" id="bwmsModel">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label required">BWMS Type</label>
+                                    <select class="form-select" id="bwmsType" required onchange="toggleLimitFields()">
+                                        <option value="">Select Type</option>
+                                        <option value="Electrolysis">Electrolysis</option>
+                                        <option value="Chemical">Chemical Injection</option>
+                                        <option value="UV">UV System</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label required">Min Temperature (°C)</label>
+                                    <input type="number" step="0.1" class="form-control" id="minTemp" required>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label required">Max Temperature (°C)</label>
+                                    <input type="number" step="0.1" class="form-control" id="maxTemp" required>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label required" title="Refer to O&M Manual or TAC SDL">Max Differential Pressure (bar)</label>
+                                    <input type="number" step="0.01" class="form-control" id="maxDp" required placeholder="e.g., 0.5">
+                                </div>
+                                <div class="col-md-4 d-none" id="salinityField">
+                                    <label class="form-label required">Minimum Salinity (PSU)</label>
+                                    <input type="number" step="0.1" class="form-control" id="minSalinity">
+                                </div>
+                                <div class="col-md-4 d-none" id="uvtField">
+                                    <label class="form-label required">Minimum UV-T (%)</label>
+                                    <input type="number" step="0.1" class="form-control" id="minUVT">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="part2_1" class="section-container d-none" style="padding-top: 0; padding-bottom: 1.5rem; min-height: auto;">
+                    <div class="card" style="border: 2px solid #17a2b8;">
+                        <div class="section-title part2-1-title">
+                            <i class="fa fa-database"></i> Part 2.1: Upload BWMS Specifications
+                            <button type="button" class="btn-close btn-close-white ms-auto" aria-label="Close" onclick="togglePart2_1()"></button>
+                        </div>
+                        <div class="card-body bg-light">
+                            <div class="alert alert-info mb-4" style="font-size: 0.95rem;">
+                                <i class="fa fa-info-circle"></i> After filling out this section and clicking save, the data will be bound to the Vessel Name selected in Part 1 and saved to the cloud database. The system will also automatically populate the values into Part 2 above.
+                            </div>
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label class="form-label required">Maker</label>
+                                    <input type="text" class="form-control db-input" id="dbMaker" required disabled>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label required">Model</label>
+                                    <input type="text" class="form-control db-input" id="dbModel" required disabled>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label required">BWMS Type</label>
+                                    <select class="form-select db-input" id="dbType" required disabled onchange="toggleDbLimitFields()">
+                                        <option value="">Select Type</option>
+                                        <option value="Electrolysis">Electrolysis</option>
+                                        <option value="Chemical">Chemical Injection</option>
+                                        <option value="UV">UV System</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label required">Min Temperature (°C)</label>
+                                    <input type="number" step="0.1" class="form-control db-input" id="dbMinTemp" required disabled>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label required">Max Temperature (°C)</label>
+                                    <input type="number" step="0.1" class="form-control db-input" id="dbMaxTemp" required disabled>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label required">Max Differential Pressure (bar)</label>
+                                    <input type="number" step="0.01" class="form-control db-input" id="dbMaxDp" required disabled placeholder="e.g., 0.5">
+                                </div>
+                                <div class="col-md-4 d-none" id="dbSalinityField">
+                                    <label class="form-label required">Minimum Salinity (PSU)</label>
+                                    <input type="number" step="0.1" class="form-control db-input" id="dbMinSalinity" disabled>
+                                </div>
+                                <div class="col-md-4 d-none" id="dbUvtField">
+                                    <label class="form-label required">Minimum UV-T (%)</label>
+                                    <input type="number" step="0.1" class="form-control db-input" id="dbMinUVT" disabled>
+                                </div>
+                            </div>
+                            
+                            <div class="text-end mt-4">
+                                <button type="button" class="btn btn-secondary me-2" onclick="togglePart2_1()"><i class="fa fa-times"></i> Cancel</button>
+                                <button type="button" class="btn btn-info px-4 fw-bold" id="btnSaveDb" onclick="saveBwmsDb()"><i class="fa fa-save"></i> Save to Database & Apply</button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="part3" class="section-container" style="padding-top: 1.5rem; padding-bottom: 1.5rem; min-height: auto;">
+                    <div class="card">
+                        <div class="section-title"><i class="fa fa-sign-out"></i> Part 3: Departure Information</div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label class="form-label required">Country</label>
+                                    <select class="form-select" id="depCountry" required><option value="">Select Country</option></select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label required">Port</label>
+                                    <input type="text" class="form-control" id="depPort" required>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label required">ETD</label>
+                                    <input type="date" class="form-control" id="etd" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label required">D1 Ballast Water (m³)</label>
+                                    <input type="number" class="form-control" id="d1Vol" value="0" min="0" required oninput="toggleCwqFields()">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label required">D2 Ballast Water (m³)</label>
+                                    <input type="number" class="form-control" id="d2Vol" value="0" min="0" required>
+                                </div>
+                                
+                                <div class="col-md-12 d-none" id="cwqQ1Container">
+                                    <div class="p-3 bg-light border border-warning rounded">
+                                        <label class="form-label text-danger fw-bold required">Is D1 compliant with CWQ?</label>
+                                        <select class="form-select" id="cwqD1" onchange="toggleCwqFollowUp()">
+                                            <option value="">Select...</option>
+                                            <option value="Yes">Yes</option>
+                                            <option value="No">No</option>
+                                            <option value="Unknown">Unknown</option>
+                                        </select>
+
+                                        <div class="row mt-3 d-none" id="cwqQ2Container">
+                                            <div class="col-md-6">
+                                                <label class="form-label required">Was all D1 water taken during cargo discharge?</label>
+                                                <select class="form-select" id="cwqD1_q2">
+                                                    <option value="">Select...</option>
+                                                    <option value="Yes">Yes</option>
+                                                    <option value="No">No</option>
+                                                    <option value="Not All">Not All</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-6 mt-3 mt-md-0">
+                                                <label class="form-label required">Reason for taking D1 water?</label>
+                                                <select class="form-select" id="cwqD1_q3">
+                                                    <option value="">Select...</option>
+                                                    <option value="UV-T was too low">UV-T was too low</option>
+                                                    <option value="Turbidity was too high">Turbidity was too high</option>
+                                                    <option value="Others">Others</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6 mt-4">
+                                    <label class="form-label required">BWMS Test Time</label>
+                                    <input type="datetime-local" class="form-control" id="depTestTime" required>
+                                </div>
+                                <div class="col-md-6 mt-4">
+                                    <label class="form-label required">Test Result (BWMC Status)</label>
+                                    <select class="form-select" id="depTestResult" required>
+                                        <option value="">Select Result</option>
+                                        <option value="Normal">Normal</option>
+                                        <option value="Restricted">Restricted</option>
+                                        <option value="Fault">Fault</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="part4" class="section-container" style="padding-top: 1.5rem;">
+                    <div class="card">
+                        <div class="section-title"><i class="fa fa-sign-in"></i> Part 4: Destination Information</div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label class="form-label required">Country</label>
+                                    <select class="form-select" id="destCountry" required onchange="loadPorts()">
+                                        <option value="">Select Country</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label required">Port</label>
+                                    <div id="portContainer">
+                                        <select class="form-select d-none" id="destPortSelect" required onchange="checkOtherPort()">
+                                            <option value="">Select Country First</option>
+                                        </select>
+                                        <input type="text" id="destPortOther" class="form-control mt-2 d-none" placeholder="Please specify port name...">
+                                        <input type="text" id="destPortText" class="form-control" placeholder="Enter port name..." required>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label required">ETA</label>
+                                    <input type="date" class="form-control" id="eta" required>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <label class="form-label">Latitude (Optional)</label>
+                                    <input type="number" step="any" class="form-control" id="destLat" placeholder="e.g., 31.2222">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Longitude (Optional)</label>
+                                    <input type="number" step="any" class="form-control" id="destLng" placeholder="e.g., 121.4581">
+                                </div>
+                                <div class="col-md-12 mt-1 mb-2">
+                                    <small class="text-info fw-bold"><i class="fa fa-info-circle"></i> Tip:</small> 
+                                    <small class="text-muted">These two fields are optional. Filling them enables the system to fetch the most accurate oceanographic data for your specific terminal.</small>
+                                </div>
+
+                                <div class="col-md-4 mt-3">
+                                    <label class="form-label required">Cargo Operation</label>
+                                    <select class="form-select" id="cargoOps" required>
+                                        <option value="">Select Operation</option>
+                                        <option value="Loading">Loading (Discharging Ballast)</option>
+                                        <option value="Unloading">Unloading (Uptake Ballast)</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-12 mt-3 mb-2">
+                                    <div class="smart-fetch-wrapper">
+                                        <div class="d-flex flex-column flex-md-row justify-content-between align-items-center p-3 bg-light rounded border">
+                                            <div>
+                                                <h6 class="mb-1 text-primary fw-bold"><i class="fa fa-satellite-dish"></i> Oceanographic Smart Prediction</h6>
+                                                <small class="text-muted">Automatically fetch forecasted water temperature, density & salinity for destination.</small>
+                                            </div>
+                                            <button type="button" class="btn btn-fetch-ocean mt-3 mt-md-0" id="btnFetchOcean" onclick="fetchOceanData()">
+                                                <i class="fa fa-magic"></i> Auto-Fetch Forecast
+                                            </button>
+                                        </div>
+                                        <div id="oceanDataDisplay" class="ocean-data-card d-none mt-3 p-4">
+                                            </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-4">
+                                    <label class="form-label required">Water Temperature (°C)</label>
+                                    <input type="number" step="0.1" class="form-control" id="destTemp" required>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label required">Water Density (e.g. 1.025)</label>
+                                    <input type="number" step="0.001" class="form-control" id="destDensity" required>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Water Salinity (Optional)</label>
+                                    <input type="number" step="0.1" class="form-control" id="destSalinity">
+                                </div>
+                                <div class="col-md-12">
+                                    <label class="form-label">UV-T (%) (Optional)</label>
+                                    <input type="number" step="0.1" class="form-control" id="destUVT" style="width: 32%;">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex gap-3 mt-4 mb-5 pb-5">
+                        <button type="button" class="btn btn-outline-secondary btn-lg" onclick="confirmReset()">
+                            <i class="fa fa-refresh"></i> Clear
+                        </button>
+                        <button type="button" class="btn btn-primary btn-lg flex-grow-1" id="btnAnalyze" onclick="analyzeBWM()">
+                            <i class="fa fa-bar-chart"></i> Analyze Risk
+                        </button>
+                    </div>
+                </section>
+            </form>
+
+            <section id="resultSection" class="section-container d-none">
+                <div class="section-title part5-title rounded-top mb-0"><i class="fa fa-check-square-o"></i> Part 5: Pre-voyage BWM Reliability Assessment</div>
+                <div class="card border-0 shadow mb-4 rounded-top-0">
+                    <div id="riskLight" class="p-4 rounded-bottom" style="border-radius: 0;">
+                        <h2 class="risk-title" id="riskTitle"></h2>
+                        <p class="risk-desc" id="riskDesc"></p>
+                    </div>
+                    <div class="card-body">
+                        <h5 class="card-title text-primary pb-2">Assessment Details:</h5>
+                        <ul class="list-unstyled mt-3 mb-4">
+                            <li id="statusWaterGrade" class="mb-2 fs-6"></li>
+                            <li id="statusEnv" class="fs-6"></li>
+                        </ul>
+                        <div id="actionAdvice" class="alert alert-info"></div>
+                    </div>
+                </div>
+                
+                <div class="d-grid gap-2 mb-5 pb-5">
+                    <button type="button" id="ackButton" class="btn btn-success btn-lg" onclick="acknowledgeResult()">
+                        <i class="fa fa-check-square-o"></i> I Acknowledge, Save Data & Download PDF
+                    </button>
+                </div>
+            </section>
+
+        </div>
+    </div>
+
+    <script>
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbxyqcwI2WYaUr5YqzSUVJDsSy7zp2VcGSZrUXVntXY-SrrnzxMWYy3YwDZ1E4HUd2hP/exec";
+        
+        const OCEAN_API_KEYS = [
+            "84b912ea-2e6c-11f1-a882-0242ac120004-84b91362-2e6c-11f1-a882-0242ac120004",
+            "e115c91c-2db7-11f1-9fff-0242ac120004-e115c98a-2db7-11f1-9fff-0242ac120004",
+            "242488a4-2eaf-11f1-a882-0242ac120004-24248912-2eaf-11f1-a882-0242ac120004",
+            "d42d645c-2f3e-11f1-af8e-0242ac120004-d42d64c0-2f3e-11f1-af8e-0242ac120004"
+        ];
+        
+        let turbidityData = [];
+        let vesselListData = [];
+        let isScrollListenerAdded = false;
+
+        let globalWaterGrade = "";
+        let globalEnvIndex = "";
+        let globalRisk = "";
+
+        const coastalCountries = [
+            "Albania", "Algeria", "Angola", "Antigua and Barbuda", "Argentina", "Australia", "Bahamas", "Bahrain", "Bangladesh", "Barbados", "Belgium", "Belize", "Benin", "Brazil", "Brunei", "Bulgaria", "Cabo Verde", "Cambodia", "Cameroon", "Canada", "Chile", "China", "Colombia", "Comoros", "Congo (Brazzaville)", "Congo (Kinshasa)", "Costa Rica", "Croatia", "Cuba", "Cyprus", "Denmark", "Djibouti", "Dominica", "Dominican Republic", "Ecuador", "Egypt", "El Salvador", "Equatorial Guinea", "Eritrea", "Estonia", "Fiji", "Finland", "France", "Gabon", "Gambia", "Georgia", "Germany", "Ghana", "Greece", "Grenada", "Guatemala", "Guinea", "Guinea-Bissau", "Guyana", "Haiti", "Honduras", "Iceland", "India", "Indonesia", "Iran", "Iraq", "Ireland", "Israel", "Italy", "Ivory Coast", "Jamaica", "Japan", "Jordan", "Kenya", "Kiribati", "Kuwait", "Lebanon", "Liberia", "Libya", "Lithuania", "Madagascar", "Malaysia", "Maldives", "Malta", "Marshall Islands", "Mauritania", "Mauritius", "Mexico", "Micronesia", "Monaco", "Montenegro", "Morocco", "Mozambique", "Myanmar", "Namibia", "Nauru", "Netherlands", "New Zealand", "Nicaragua", "Nigeria", "North Korea", "Norway", "Oman", "Pakistan", "Palau", "Panama", "Papua New Guinea", "Peru", "Philippines", "Poland", "Portugal", "Qatar", "Romania", "Russia", "Saint Kitts and Nevis", "Saint Lucia", "Saint Vincent and the Grenadines", "Samoa", "Sao Tome and Principe", "Saudi Arabia", "Senegal", "Seychelles", "Sierra Leone", "Singapore", "Solomon Islands", "Somalia", "South Africa", "South Korea", "Spain", "Sri Lanka", "Sudan", "Suriname", "Sweden", "Syria", "Taiwan", "Tanzania", "Thailand", "Timor-Leste", "Togo", "Tonga", "Trinidad and Tobago", "Tunisia", "Turkey", "Tuvalu", "Ukraine", "United Arab Emirates", "United Kingdom", "United States", "Uruguay", "Vanuatu", "Venezuela", "Vietnam", "Yemen"
+        ];
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            setTodayDate();
+            
+            const depCountrySelect = document.getElementById('depCountry');
+            const destCountrySelect = document.getElementById('destCountry');
+            coastalCountries.forEach(country => {
+                depCountrySelect.appendChild(new Option(country, country));
+                destCountrySelect.appendChild(new Option(country, country));
+            });
+            
+            const vesselSelect = document.getElementById('vesselName');
+            
+            try {
+                const response = await fetch(GAS_URL);
+                if (!response.ok) throw new Error("Network response was not ok");
+                const data = await response.json();
+                
+                turbidityData = data.turbidityData || [];
+                vesselListData = data.vesselList || [];
+                
+                if (vesselListData.length === 0) {
+                    vesselSelect.innerHTML = '<option value="">No vessels found in database</option>';
+                } else {
+                    vesselSelect.innerHTML = '<option value="">Select Vessel</option>';
+                    vesselListData.forEach(vessel => {
+                        vesselSelect.appendChild(new Option(vessel, vessel));
+                    });
+                }
+            } catch (e) { 
+                console.error("Failed to load GAS data", e); 
+                vesselSelect.innerHTML = '<option value="">Error loading database (Check network)</option>';
+            }
+            initAnchorNav();
+        });
+
+        function scrollToTop(e) {
+            e.preventDefault();
+            document.querySelector('.scroll-wrapper').scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function setTodayDate() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('reportDate').value = today;
+        }
+
+        /* ================= Part 3: CWQ 動態欄位控制 ================= */
+        function toggleCwqFields() {
+            const vol = parseFloat(document.getElementById('d1Vol').value) || 0;
+            const cwqQ1Container = document.getElementById('cwqQ1Container');
+            const cwqD1 = document.getElementById('cwqD1');
+            
+            if (vol > 0) {
+                cwqQ1Container.classList.remove('d-none');
+                cwqD1.required = true;
+            } else {
+                cwqQ1Container.classList.add('d-none');
+                cwqD1.required = false;
+                cwqD1.value = "";
+                toggleCwqFollowUp();
+            }
+        }
+
+        function toggleCwqFollowUp() {
+            const val = document.getElementById('cwqD1').value;
+            const q2Container = document.getElementById('cwqQ2Container');
+            const q2 = document.getElementById('cwqD1_q2');
+            const q3 = document.getElementById('cwqD1_q3');
+
+            if (val === 'Unknown') {
+                q2Container.classList.remove('d-none');
+                q2.required = true;
+                q3.required = true;
+            } else {
+                q2Container.classList.add('d-none');
+                q2.required = false;
+                q3.required = false;
+                q2.value = "";
+                q3.value = "";
+            }
+        }
+
+        /* ================= BWMS 規格匯入 (Import Spec) ================= */
+        async function importBwmsSpec() {
+            const vesselName = document.getElementById('vesselName').value;
+            if (!vesselName) {
+                alert("Please select a Vessel Name in Part 1 first.");
+                document.getElementById('vesselName').scrollIntoView({behavior: 'smooth', block: 'center'});
+                return;
+            }
+
+            const btn = document.getElementById('btnImportSpec');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Importing...';
+            btn.disabled = true;
+
+            try {
+                const payload = { action: 'getBwmsSpec', vesselName: vesselName };
+                const response = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(payload) });
+                const result = await response.json();
+
+                if (result.status === 'success' && result.data) {
+                    document.getElementById('bwmsMaker').value = result.data.maker || '';
+                    document.getElementById('bwmsModel').value = result.data.model || '';
+                    document.getElementById('bwmsType').value = result.data.type || '';
+                    
+                    toggleLimitFields(); 
+                    
+                    document.getElementById('minTemp').value = result.data.minTemp || '';
+                    document.getElementById('maxTemp').value = result.data.maxTemp || '';
+                    document.getElementById('maxDp').value = result.data.maxDp || '';
+                    
+                    if (result.data.type === 'Electrolysis') document.getElementById('minSalinity').value = result.data.minSalinity || '';
+                    if (result.data.type === 'UV') document.getElementById('minUVT').value = result.data.minUvt || '';
+                    
+                    alert("Saved successfully! The BWMS specifications have been retrieved from the database and filled into your form.");
+                } else {
+                    alert("No BWMS specification found for this vessel in the database. Please use 'Upload Spec' to create one first.");
+                }
+            } catch (error) {
+                console.error("Import failed:", error);
+                alert("Import failed. Please check your network connection or try again later.");
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        /* ================= BWMS 規格資料庫建立 (Part 2.1) ================= */
+        function togglePart2_1() {
+            const p21 = document.getElementById('part2_1');
+            const isHidden = p21.classList.contains('d-none');
+            if (isHidden) {
+                p21.classList.remove('d-none');
+                p21.querySelectorAll('.db-input').forEach(el => el.disabled = false);
+                p21.scrollIntoView({behavior: 'smooth', block: 'center'});
+                if(!document.getElementById('dbType').value) toggleDbLimitFields(); 
+            } else {
+                p21.classList.add('d-none');
+                p21.querySelectorAll('.db-input').forEach(el => el.disabled = true);
+            }
+        }
+
+        function toggleDbLimitFields() {
+            const type = document.getElementById('dbType').value;
+            const salField = document.getElementById('dbSalinityField');
+            const minSalInput = document.getElementById('dbMinSalinity');
+            if (type === 'Electrolysis') {
+                salField.classList.remove('d-none');
+                minSalInput.required = true;
+            } else {
+                salField.classList.add('d-none');
+                minSalInput.required = false;
+                minSalInput.value = '';
+            }
+            const uvtField = document.getElementById('dbUvtField');
+            const minUvtInput = document.getElementById('dbMinUVT');
+            if (type === 'UV') {
+                uvtField.classList.remove('d-none');
+                minUvtInput.required = true;
+            } else {
+                uvtField.classList.add('d-none');
+                minUvtInput.required = false;
+                minUvtInput.value = '';
+            }
+        }
+
+        async function saveBwmsDb() {
+            const vesselName = document.getElementById('vesselName').value;
+            if (!vesselName) {
+                alert("Please select a Vessel Name in Part 1 first, so the specification data can be bound and saved to the database.");
+                document.getElementById('vesselName').scrollIntoView({behavior: 'smooth', block: 'center'});
+                return;
+            }
+
+            const p21 = document.getElementById('part2_1');
+            const inputs = p21.querySelectorAll('input[required]:not(:disabled), select[required]:not(:disabled)');
+            let isValid = true;
+            for (let input of inputs) {
+                if (input.closest('.d-none')) continue; 
+                if (!input.checkValidity()) {
+                    input.reportValidity();
+                    input.scrollIntoView({behavior: 'smooth', block: 'center'});
+                    isValid = false;
+                    break;
+                }
+            }
+            if (!isValid) return;
+
+            const btn = document.getElementById('btnSaveDb');
+            btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Saving...';
+            btn.disabled = true;
+
+            const payload = {
+                action: 'saveBwmsDb',
+                vesselName: vesselName,
+                maker: document.getElementById('dbMaker').value,
+                model: document.getElementById('dbModel').value,
+                type: document.getElementById('dbType').value,
+                minTemp: document.getElementById('dbMinTemp').value,
+                maxTemp: document.getElementById('dbMaxTemp').value,
+                maxDp: document.getElementById('dbMaxDp').value,
+                minSalinity: document.getElementById('dbMinSalinity').value,
+                minUvt: document.getElementById('dbMinUVT').value
+            };
+
+            try {
+                await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(payload) });
+
+                document.getElementById('bwmsMaker').value = payload.maker;
+                document.getElementById('bwmsModel').value = payload.model;
+                document.getElementById('bwmsType').value = payload.type;
+                toggleLimitFields(); 
+                document.getElementById('minTemp').value = payload.minTemp;
+                document.getElementById('maxTemp').value = payload.maxTemp;
+                document.getElementById('maxDp').value = payload.maxDp;
+                if (payload.type === 'Electrolysis') document.getElementById('minSalinity').value = payload.minSalinity;
+                if (payload.type === 'UV') document.getElementById('minUVT').value = payload.minUvt;
+
+                alert("Saved successfully! The BWMS specifications have been saved to the database and automatically filled into your form.");
+                togglePart2_1(); 
+
+            } catch (error) {
+                console.error("Save failed:", error);
+                alert("Save failed. Please check your network connection or try again later.");
+            } finally {
+                btn.innerHTML = '<i class="fa fa-save"></i> Save to Database & Apply';
+                btn.disabled = false;
+            }
+        }
+
+        /* ================= 港口載入與 Other 處理 ================= */
+        function loadPorts() {
+            const country = document.getElementById('destCountry').value.trim().toLowerCase();
+            const portSelect = document.getElementById('destPortSelect');
+            const portOther = document.getElementById('destPortOther');
+            const portText = document.getElementById('destPortText');
+            
+            const hasHighTurbidity = turbidityData.some(item => item.country && item.country.trim().toLowerCase() === country);
+            
+            if (!country) {
+                portSelect.classList.add('d-none');
+                portSelect.required = false;
+                portSelect.value = '';
+                
+                portOther.classList.add('d-none');
+                portOther.required = false;
+                portOther.value = '';
+                
+                portText.classList.remove('d-none');
+                portText.required = true;
+            } else if (hasHighTurbidity) {
+                portSelect.classList.remove('d-none');
+                portSelect.required = true;
+                
+                let optionsHtml = '<option value="">Select Port</option>';
+                const filteredPorts = turbidityData.filter(item => item.country && item.country.trim().toLowerCase() === country);
+                filteredPorts.forEach(p => {
+                    optionsHtml += `<option value="${p.port}">${p.port}</option>`;
+                });
+                optionsHtml += '<option value="Other">Other...</option>';
+                
+                portSelect.innerHTML = optionsHtml;
+                
+                portText.classList.add('d-none');
+                portText.required = false;
+                portText.value = '';
+                checkOtherPort();
+            } else {
+                portSelect.classList.add('d-none');
+                portSelect.required = false;
+                portSelect.value = '';
+                
+                portOther.classList.add('d-none');
+                portOther.required = false;
+                portOther.value = '';
+                
+                portText.classList.remove('d-none');
+                portText.required = true;
+            }
+        }
+
+        function checkOtherPort() {
+            const portSelect = document.getElementById('destPortSelect').value;
+            const otherInput = document.getElementById('destPortOther');
+            if (portSelect === "Other" && !document.getElementById('destPortSelect').classList.contains('d-none')) {
+                otherInput.classList.remove('d-none');
+                otherInput.required = true;
+            } else {
+                otherInput.classList.add('d-none');
+                otherInput.required = false;
+                otherInput.value = '';
+            }
+        }
+
+        function toggleLimitFields() {
+            const type = document.getElementById('bwmsType').value;
+            const salField = document.getElementById('salinityField');
+            const minSalInput = document.getElementById('minSalinity');
+            const uvtField = document.getElementById('uvtField');
+            const minUvtInput = document.getElementById('minUVT');
+
+            if (type === 'Electrolysis') {
+                salField.classList.remove('d-none');
+                minSalInput.required = true;
+            } else {
+                salField.classList.add('d-none');
+                minSalInput.required = false;
+                minSalInput.value = '';
+            }
+            
+            if (type === 'UV') {
+                uvtField.classList.remove('d-none');
+                minUvtInput.required = true;
+            } else {
+                uvtField.classList.add('d-none');
+                minUvtInput.required = false;
+                minUvtInput.value = '';
+            }
+        }
+
+        /* ================= Ocean API 邏輯 (含自動輪替與容錯備援) ================= */
+        async function fetchOceanData() {
+            const btn = document.getElementById('btnFetchOcean');
+            const display = document.getElementById('oceanDataDisplay');
+            
+            const bwmsType = document.getElementById('bwmsType').value;
+            const minTempStr = document.getElementById('minTemp').value;
+            const maxTempStr = document.getElementById('maxTemp').value;
+            if (!bwmsType || !minTempStr || !maxTempStr) {
+                alert("Please fill in BWMS Operating Limits (Part 2) before fetching forecast for cross-checking.");
+                document.getElementById('bwmsType').scrollIntoView({behavior: 'smooth', block: 'center'});
+                return;
+            }
+
+            const country = document.getElementById('destCountry').value;
+            const portSelect = document.getElementById('destPortSelect');
+            const portOther = document.getElementById('destPortOther');
+            const portText = document.getElementById('destPortText');
+            const eta = document.getElementById('eta').value;
+
+            const inputLatStr = document.getElementById('destLat').value;
+            const inputLngStr = document.getElementById('destLng').value;
+
+            if (!eta) { alert("Please set ETA first."); return; }
+            let port = "";
+            if (!portSelect.classList.contains('d-none')) {
+                port = portSelect.value === "Other" ? portOther.value : portSelect.value;
+            } else { port = portText.value; }
+            
+            if (!country || !port) { alert("Please complete Destination Country and Port first."); return; }
+
+            btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Fetching...';
+            btn.disabled = true;
+            display.classList.add('d-none');
+
+            try {
+                let lat, lng;
+                if (inputLatStr && inputLngStr && !isNaN(inputLatStr) && !isNaN(inputLngStr)) {
+                    lat = parseFloat(inputLatStr);
+                    lng = parseFloat(inputLngStr);
+                } else {
+                    const geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(port)}&count=1`);
+                    if (!geoRes.ok) throw new Error("LocationNotFound");
+                    const geoData = await geoRes.json();
+                    if (!geoData.results || geoData.results.length === 0) throw new Error("LocationNotFound");
+                    lat = geoData.results[0].latitude;
+                    lng = geoData.results[0].longitude;
+                    document.getElementById('destLat').value = lat;
+                    document.getElementById('destLng').value = lng;
+                }
+
+                let etaDate = new Date(eta);
+                const today = new Date();
+                const maxDate = new Date();
+                maxDate.setDate(today.getDate() + 10);
+                if (etaDate > maxDate) etaDate = maxDate;
+                else if (etaDate < today) etaDate = today;
+                etaDate.setUTCHours(12, 0, 0, 0); 
+                const timestamp = Math.floor(etaDate.getTime() / 1000);
+
+                let waterTemp = null;
+                let salinity = 35.0;
+                let workingKey = null;
+
+                for (let i = 0; i < OCEAN_API_KEYS.length; i++) {
+                    const currentKey = OCEAN_API_KEYS[i];
+                    try {
+                        const sgRes = await fetch(`https://api.stormglass.io/v2/weather/point?lat=${lat}&lng=${lng}&params=waterTemperature&start=${timestamp}&end=${timestamp}`, {
+                            headers: { 'Authorization': currentKey }
+                        });
+
+                        if (!sgRes.ok) {
+                            if (sgRes.status === 402 || sgRes.status === 403 || sgRes.status === 429) {
+                                console.warn(`API Key ${i + 1} quota exceeded or forbidden. Trying next key...`);
+                                continue; 
+                            }
+                            throw new Error(`APIError: ${sgRes.status}`); 
+                        }
+
+                        const sgData = await sgRes.json();
+                        if (!sgData.hours || sgData.hours.length === 0) throw new Error("NoData");
+
+                        waterTemp = sgData.hours[0].waterTemperature ? (sgData.hours[0].waterTemperature.sg || sgData.hours[0].waterTemperature.noaa) : null;
+                        if (waterTemp === null) throw new Error("NoData");
+
+                        workingKey = currentKey; 
+                        break; 
+                    } catch (error) {
+                        if (error.message.startsWith('APIError') || error.message === 'NoData') {
+                            throw error;
+                        }
+                    }
+                }
+
+                if (waterTemp === null) {
+                    throw new Error("QuotaExceeded");
+                }
+
+                try {
+                    const bioRes = await fetch(`https://api.stormglass.io/v2/bio/point?lat=${lat}&lng=${lng}&params=salinity&start=${timestamp}&end=${timestamp}`, {
+                        headers: { 'Authorization': workingKey }
+                    });
+                    if (bioRes.ok) {
+                        const bioData = await bioRes.json();
+                        if (bioData.hours && bioData.hours.length > 0 && bioData.hours[0].salinity) salinity = bioData.hours[0].salinity.sg || 35.0;
+                    }
+                } catch(e) {
+                    console.warn("Failed to fetch salinity, proceeding with default 35.0 PSU");
+                }
+
+                const T = waterTemp; const S = salinity;
+                const rho = 1000 + (0.824493 - 0.0040899 * T) * S - 0.00572466 * Math.pow(T, 2) + 0.10227 * T - 0.00016546 * Math.pow(T, 3);
+                const density = (rho / 1000).toFixed(3);
+
+                let crossCheckAlertHtml = "";
+                const minTemp = parseFloat(minTempStr);
+                const maxTemp = parseFloat(maxTempStr);
+                const minSal = parseFloat(document.getElementById('minSalinity').value);
+                const manTempStr = document.getElementById('destTemp').value;
+                const manDenStr = document.getElementById('destDensity').value;
+                const manSalStr = document.getElementById('destSalinity').value;
+
+                let warningsList = [];
+                const apiTempBad = (waterTemp < minTemp || waterTemp > maxTemp);
+                const apiSalBad = (bwmsType === 'Electrolysis' && salinity < minSal);
+                
+                let minDensityLimit = 1.01;
+                if(bwmsType === 'Electrolysis' && !isNaN(minSal)) {
+                    const Tr = waterTemp; const Sr = minSal;
+                    const rhor = 1000 + (0.824493 - 0.0040899 * Tr) * Sr - 0.00572466 * Math.pow(Tr, 2) + 0.10227 * Tr - 0.00016546 * Math.pow(Tr, 3);
+                    minDensityLimit = rhor / 1000;
+                }
+                const apiDenBad = (bwmsType === 'Electrolysis' && parseFloat(density) < minDensityLimit);
+
+                if (apiTempBad) warningsList.push(`Forecasted Temperature (<strong class="text-danger">${waterTemp.toFixed(1)}°C</strong>) is OUTSIDE the BWMS limits (${minTemp}°C - ${maxTemp}°C).`);
+                if (apiSalBad) warningsList.push(`Forecasted Salinity (<strong class="text-danger">${salinity.toFixed(1)} PSU</strong>) is BELOW the required limit (${minSal} PSU).`);
+                if (apiDenBad) warningsList.push(`Forecasted Density (<strong class="text-danger">${density}</strong>) is BELOW the safe minimum (${minDensityLimit.toFixed(3)}).`);
+
+                if (warningsList.length > 0) {
+                    crossCheckAlertHtml = `
+                        <div class="api-crosscheck-alert mt-3 p-3 rounded" style="background-color: rgba(220, 53, 69, 0.15); border-left: 4px solid #dc3545; color: #ffb3b3;">
+                            <strong class="d-block mb-2 text-danger"><i class="fa fa-exclamation-triangle"></i> Out of Bounds Warning!</strong>
+                            <ul class="mb-2 ps-3" style="font-size: 0.9rem;">
+                                ${warningsList.map(w => `<li>${w}</li>`).join('')}
+                            </ul>
+                            <small class="d-block" style="color: #d1d1d1;">Please verify the actual conditions carefully. The system will prioritize your <strong>Manual Inputs</strong> for the final BWM Risk Analysis.</small>
+                        </div>
+                    `;
+                }
+
+                let applyBtnHtml = "";
+                if(manTempStr === "" && manDenStr === "") {
+                    applyBtnHtml = `<button type="button" class="btn-apply-data" onclick="applyOceanData(${waterTemp.toFixed(1)}, ${density}, ${salinity.toFixed(1)}, this)">Fill Empty Fields</button>`;
+                }
+
+                display.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <h6 class="mb-0 text-info fw-bold"><i class="fa fa-check-circle"></i> Forecast Retrieved Successfully</h6>
+                            <small style="color: #8898aa;">Target Date: ${etaDate.toISOString().split('T')[0]}</small>
+                        </div>
+                        ${applyBtnHtml}
+                    </div>
+                    <div class="row text-center pt-2" style="border-top: 1px solid rgba(255,255,255,0.1);">
+                        <div class="col-4">
+                            <div style="color: #8898aa; font-size: 0.85rem;">Temperature</div>
+                            <div class="data-value">${waterTemp.toFixed(1)} <span class="fs-6 text-muted">°C</span></div>
+                        </div>
+                        <div class="col-4">
+                            <div style="color: #8898aa; font-size: 0.85rem;">Density</div>
+                            <div class="data-value">${density}</div>
+                        </div>
+                        <div class="col-4">
+                            <div style="color: #8898aa; font-size: 0.85rem;">Salinity</div>
+                            <div class="data-value">${salinity.toFixed(1)} <span class="fs-6 text-muted">PSU</span></div>
+                        </div>
+                    </div>
+                    ${crossCheckAlertHtml}
+                `;
+                display.classList.remove('d-none');
+
+            } catch (error) {
+                console.error(error);
+                let errMsg = "Unable to fetch forecast data. Please enter manual values below.";
+                if (error.message === "QuotaExceeded") errMsg = "Daily free data quota exhausted for all API keys. Please enter manual values below.";
+                
+                display.innerHTML = `
+                    <div class="text-warning text-center">
+                        <i class="fa fa-exclamation-triangle fs-4 mb-2"></i>
+                        <p class="mb-0 fw-bold">${errMsg}</p>
+                    </div>
+                `;
+                display.classList.remove('d-none');
+            } finally {
+                btn.innerHTML = '<i class="fa fa-magic"></i> Auto-Fetch Forecast';
+                btn.disabled = false;
+            }
+        }
+
+        function applyOceanData(t, d, s, btn) {
+            document.getElementById('destTemp').value = t;
+            document.getElementById('destDensity').value = d;
+            document.getElementById('destSalinity').value = s;
+            
+            btn.innerHTML = '<i class="fa fa-check"></i> Applied!';
+            btn.style.backgroundColor = '#00d2ff';
+            btn.style.color = '#0a1128';
+        }
+
+        /* ================= 核心邏輯：風險評估與寫入 ================= */
+        async function analyzeBWM() {
+            const form = document.getElementById('bwmForm');
+            
+            if (!form.checkValidity()) { 
+                const firstInvalid = form.querySelector(':invalid');
+                if (firstInvalid) {
+                    const wrapper = document.querySelector('.scroll-wrapper');
+                    const targetPos = firstInvalid.getBoundingClientRect().top + wrapper.scrollTop - wrapper.getBoundingClientRect().top - 100;
+                    wrapper.scrollTo({ top: targetPos, behavior: 'smooth' });
+                    setTimeout(() => form.reportValidity(), 300);
+                }
+                return; 
+            }
+
+            const analyzeBtn = document.getElementById('btnAnalyze');
+            const origAnalyzeText = analyzeBtn.innerHTML;
+            analyzeBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Analyzing & Saving...';
+            analyzeBtn.disabled = true;
+
+            try {
+                const type = document.getElementById('bwmsType').value;
+                const d1 = parseFloat(document.getElementById('d1Vol').value) || 0;
+                const d2 = parseFloat(document.getElementById('d2Vol').value) || 0;
+                const depStatusRaw = document.getElementById('depTestResult').value;
+                const cargoOps = document.getElementById('cargoOps').value;
+
+                let d1CwqCompliant = false;
+                if (d1 > 0) {
+                    const q1 = document.getElementById('cwqD1').value;
+                    if (q1 === 'Yes') d1CwqCompliant = true;
+                    else if (q1 === 'No') d1CwqCompliant = false;
+                    else if (q1 === 'Unknown') {
+                        const q2 = document.getElementById('cwqD1_q2').value;
+                        const q3 = document.getElementById('cwqD1_q3').value;
+                        if (q2 === 'Yes' && q3 !== 'Others' && q3 !== '') d1CwqCompliant = true;
+                    }
+                }
+
+                globalWaterGrade = "NIL";
+                if (d1 === 0 && d2 === 0) globalWaterGrade = "NIL";
+                else if (d1 === 0 && d2 > 0) globalWaterGrade = "D2";
+                else if (d1 > 0 && d1CwqCompliant) globalWaterGrade = "D1/CWQ";
+                else if (d1 > 0 && !d1CwqCompliant) globalWaterGrade = "D1";
+
+                const bwmcStatus = (depStatusRaw === 'Normal') ? 'Normal' : 'Faulty';
+
+                const destCountry = document.getElementById('destCountry').value;
+                let actualDestPort = "";
+                if (!document.getElementById('destPortSelect').classList.contains('d-none')) {
+                    actualDestPort = document.getElementById('destPortSelect').value === "Other" ? document.getElementById('destPortOther').value : document.getElementById('destPortSelect').value;
+                } else {
+                    actualDestPort = document.getElementById('destPortText').value;
+                }
+                
+                const destTemp = parseFloat(document.getElementById('destTemp').value);
+                const minTemp = parseFloat(document.getElementById('minTemp').value);
+                const maxTemp = parseFloat(document.getElementById('maxTemp').value);
+                const density = parseFloat(document.getElementById('destDensity').value);
+                const salInput = document.getElementById('destSalinity').value;
+                const sal = salInput ? parseFloat(salInput) : NaN;
+                const minSalLimit = parseFloat(document.getElementById('minSalinity').value);
+                const minUvtLimit = parseFloat(document.getElementById('minUVT').value);
+                
+                globalEnvIndex = "Normal";
+                let envWarnings = [];
+                let reliabilityAdvice = "<br><br><strong>BWMC Reliability Reminder & Advice:</strong><br>If a BWMC failure event occurs, please return to this page to complete the BWMC Failure Reporting.<br>";
+
+                let tempOut = (destTemp < minTemp || destTemp > maxTemp);
+                let isHighTurbidity = turbidityData.some(t => t.country && t.port && t.country.trim().toLowerCase() === destCountry.trim().toLowerCase() && t.port.trim().toLowerCase() === actualDestPort.trim().toLowerCase());
+                
+                let denOut = false;
+                let minDensityLimit = 1.01;
+                if (type === 'Electrolysis') {
+                    if (!isNaN(minSalLimit) && !isNaN(destTemp)) {
+                        const T = destTemp; const S = minSalLimit;
+                        const rho = 1000 + (0.824493 - 0.0040899 * T) * S - 0.00572466 * Math.pow(T, 2) + 0.10227 * T - 0.00016546 * Math.pow(T, 3);
+                        minDensityLimit = rho / 1000;
+                    }
+                    if (density < minDensityLimit || (!isNaN(sal) && sal < minSalLimit)) denOut = true;
+                    
+                    if (tempOut || denOut || isHighTurbidity) globalEnvIndex = "Danger";
+                    if (tempOut) envWarnings.push("The destination water temperature exceeds BWMS operating limits, which may restrict BWMS capacity. Note: If loading cargo, consider the possibility of entering port at minimum safe navigational draft.");
+                    if (denOut) envWarnings.push("The destination water salinity may be below the BWMS operating limit, causing the BWMS to fail. If discharging cargo, consider pre-storing treated (D2) seawater to facilitate a mixing solution at the destination port. Notify the company immediately for assistance. If loading cargo, consider the possibility of entering port at minimum safe navigational draft.");
+                    if (isHighTurbidity) envWarnings.push("The destination water turbidity may be very high, which could restrict or fail the BWMS. If discharging cargo, consult the local agent to confirm if there have been recent cases of BWMS failure due to high turbidity. Notify the company immediately for assistance. If the agent confirms such cases, CWQ contingency measures may be applicable. Most importantly, ensure the BWMS filter differential pressure alarm is triggered and retain relevant electronic and paper records (BWRB).");
+                } else if (type === 'UV') {
+                    if (tempOut || isHighTurbidity) globalEnvIndex = "Danger";
+                    if (tempOut) envWarnings.push("The destination water temperature exceeds BWMS operating limits, which may restrict BWMS capacity. Note: If loading cargo, consider the possibility of entering port at minimum safe navigational draft.");
+                    if (isHighTurbidity) envWarnings.push("The destination water turbidity may be very high, restricting or failing the BWMS. If discharging cargo, ask the local agent for local UV-T values and confirm if there have been recent UV BWMS failures due to low UV-T. Notify the company immediately for assistance. If it is confirmed that the destination UV-T is below the operating limit or if the agent confirms prior failures, CWQ contingency measures may be applicable. Most importantly, ensure the BWMS filter DP alarm is triggered and retain relevant records (BWRB).");
+                } else if (type === 'Chemical') {
+                    if (tempOut || isHighTurbidity) globalEnvIndex = "Danger";
+                    if (tempOut) envWarnings.push("The destination water temperature exceeds BWMS operating limits, which may restrict BWMS capacity. Note: If loading cargo, consider the possibility of entering port at minimum safe navigational draft.");
+                    if (isHighTurbidity) envWarnings.push("The destination water turbidity may be very high, which could restrict or fail the BWMS. If discharging cargo, consult the local agent to confirm if there have been recent cases of BWMS failure due to high turbidity. Notify the company immediately for assistance. If the agent confirms such cases, CWQ contingency measures may be applicable. Most importantly, ensure the BWMS filter differential pressure alarm is triggered and retain relevant electronic and paper records (BWRB).");
+                }
+
+                if (envWarnings.length > 0) {
+                    reliabilityAdvice += "<br>" + envWarnings.join("<br><br>");
+                } else {
+                    reliabilityAdvice = ""; 
+                }
+
+                const result = getCaseResult(cargoOps, bwmcStatus, globalWaterGrade, globalEnvIndex);
+                
+                globalRisk = result.risk;
+                
+                const now = new Date();
+                const reportTimeUTC = now.toISOString().replace('T', ' ').substring(0, 19) + ' UTC';
+
+                const payload = {
+                    action: 'saveAssessment',
+                    reportTime: reportTimeUTC,
+                    vesselName: document.getElementById('vesselName').value,
+                    voyageNo: document.getElementById('voyageNo').value,
+                    etd: document.getElementById('etd').value,
+                    depCountry: document.getElementById('depCountry').value,
+                    depPort: document.getElementById('depPort').value,
+                    d1Vol: d1,
+                    d2Vol: d2,
+                    waterGrade: globalWaterGrade,
+                    depTestTime: document.getElementById('depTestTime').value,
+                    depTestResult: depStatusRaw,
+                    eta: document.getElementById('eta').value,
+                    destCountry: destCountry,
+                    destPort: actualDestPort,
+                    cargoOps: cargoOps,
+                    destTemp: destTemp,
+                    destDensity: density,
+                    destSalinity: document.getElementById('destSalinity').value,
+                    destUVT: document.getElementById('destUVT').value,
+                    envIndex: globalEnvIndex,
+                    masterName: document.getElementById('masterName').value,
+                    coName: document.getElementById('coName').value,
+                    ceName: document.getElementById('ceName').value,
+                    destPortRisk: globalRisk
+                };
+
+                await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(payload) });
+
+                displayResult(result.risk, globalWaterGrade, globalEnvIndex, envWarnings, result.advice + reliabilityAdvice);
+
+            } catch (error) {
+                console.error("Analysis or Save failed:", error);
+                alert("An error occurred during analysis or saving data. Please check your network and try again.");
+            } finally {
+                analyzeBtn.innerHTML = origAnalyzeText;
+                analyzeBtn.disabled = false;
+            }
+        }
+
+        function getCaseResult(cargoOps, bwmcStatus, waterGrade, envIndex) {
+            let risk = "Normal", advice = "";
+            const isLoading = (cargoOps === 'Loading');
+
+            if (isLoading) {
+                if (envIndex === 'Normal') {
+                    if (bwmcStatus === 'Normal') {
+                        if (waterGrade === "D2") { risk = "Normal"; advice = `Action: Execute standard BWM operations. The onboard "D2" water is compliant for discharge at the destination.<br>Pre-Arrival Check: Conduct routine testing and pre-arrival inspections of the BWMS. Verify all sensors and logs are functioning correctly to ensure the system remains fully operational for any required ballasting/deballasting in port.`; }
+                        else if (waterGrade === "D1/CWQ") { risk = "Normal"; advice = `Action (Decontamination): Execute a BWE+BWT (Ballast Water Exchange + Treatment) procedure at an appropriate location during the voyage for decontamination.<br>Legality & Notification: You must notify the next port of this operation. Do not worry—this is completely legal. Because your initial water grade is "D1/CWQ", this decontamination process is a fully compliant standard operation.<br>Pre-Arrival Check: Perform a routine inspection of the BWMS before arrival to ensure the system is fully operational for any cargo operations at the destination.`; }
+                        else if (waterGrade === "D1") { risk = "Warning"; advice = `Pre-emptive Decontamination: You cannot discharge "D1" directly. While en route in appropriate deep water, perform a BWE+BWT procedure for decontamination to exchange the non-compliant water to the "D2" standard.<br>Note the critical difference: Here, decontamination is not a standard operation but a pre-emptive measure taken by the shipowner to correct a non-compliant ("D1") status.<br>Mandatory Action: You MUST notify the next port's Port State Control (PSC) prior to arrival to report this BWE+BWT procedure and obtain their explicit agreement for discharge, even if all BW o/b is exchanged to D2.<br>If PSC Disagrees: Do not discharge. You must implement contingency measures: Retain on Board (ROB) or arrange for a Shore Reception Facility (SRF) at the destination.<br>Pre-Arrival Check: Thoroughly test the BWMS prior to executing the BWE+BWT procedure to ensure the treatment process will be successful and logged correctly.`; }
+                        else if (waterGrade === "NIL") { risk = "Normal"; advice = `Action: Standard operations apply. No immediate discharge or exchange actions are required en route.<br>Pre-Arrival Check: Execute standard pre-arrival BWMS checks. Confirm the system is clear of alarms and fully ready to handle any ballasting needs required for cargo operations at the destination port.`; }
+                    } else { 
+                        if (waterGrade === "D2") { risk = "Warning"; advice = `If Repaired Before Arrival: * Perform a comprehensive pre-arrival check and functional test of the BWMS.<br>Ensure all repairs and tests are accurately logged in the Ballast Water Record Book (BWRB). Standard discharge procedures apply.<br>If Unable to Repair Before Arrival: * Pre-emptive Action (Deep Sea Discharge): In deep-sea areas (at least 50nm from the nearest land), prioritize ship stability and aim to discharge the compliant "D2" water to reach the "minimum safe navigational draft" to prevent cargo shutout at the destination. However this violated BWMC regulations (see Final Warning below).<br>CRITICAL PRE-REQUISITE (For Active Substance Systems): You MUST manually test the TRO level using a portable test kit before discharging.<br>If TRO < MADC (Typically < 0.1 mg/L): Proceed to discharge. The water has naturally degraded and is fully compliant.<br>If TRO > MADC: STRICTLY NO DIRECT DISCHARGE. Do not force the discharge. The risk of PSC detention and massive fines far outweighs commercial delays.<br>Alternative Action for High TRO: 1. Consult the vessel's approved Ballast Water Management Plan (BWMP) immediately to see if Emergency Manual Neutralization (e.g., manual dosing of Sodium Thiosulfate) is permitted. If yes, execute strictly per BWMP, re-test TRO, and discharge only when compliant.<br>2. If manual neutralization is not possible, you must Retain on Board (ROB).<br>Mandatory Reporting: Notify the Company, Charterer, and the destination port immediately regarding the BWMS failure and your mitigation actions (ROB or Shore Reception Facility request) to manage commercial impact and Port State Control expectations.<br>Final Warning: Forcibly discharging D2 water without BWMS to enter the port at the "minimum safe navigational draft" fundamentally violates the spirit of the BWM Convention and must be approached with extreme caution.`; }
+                        else if (waterGrade === "D1/CWQ") { risk = "Warning"; advice = `If Repaired Before Arrival: * Action (Decontamination): Execute a BWE+BWT (Ballast Water Exchange + Treatment) procedure at an appropriate location during the voyage for decontamination.<br>Legality & Notification: You must notify the next port of this operation. Do not worry—this is completely legal. Because your initial water grade is "D1/CWQ", this decontamination process is a fully compliant standard operation.<br>Pre-Arrival Check: Perform a comprehensive pre-arrival check to ensure the BWMS is fully operational for any ballasting operations required during cargo handling at the destination.<br>If Unable to Repair Before Arrival: * Pre-emptive Action (Deep Sea Discharge): In deep-sea areas (at least 50nm from the nearest land), prioritize ship stability and aim to discharge the water to reach the "minimum safe navigational draft" to prevent cargo shutout at the destination. However this violated BWMC regulations (see Final Warning below).<br>CRITICAL PRE-REQUISITE (For Active Substance Systems): You MUST manually test the TRO level using a portable test kit before discharging.<br>If TRO < MADC (Typically < 0.1 mg/L): Proceed to discharge. The water has naturally degraded and is fully compliant.<br>If TRO > MADC: STRICTLY NO DIRECT DISCHARGE. Do not force the discharge. The risk of PSC detention and massive fines far outweighs commercial delays.<br>Alternative Action for High TRO: 1. Consult the vessel's approved Ballast Water Management Plan (BWMP) immediately to see if Emergency Manual Neutralization (e.g., manual dosing of Sodium Thiosulfate) is permitted. If yes, execute strictly per BWMP, re-test TRO, and discharge only when compliant.<br>2. If manual neutralization is not possible, you must Retain on Board (ROB).<br>Mandatory Reporting: Notify the Company, Charterer, and the destination port immediately regarding the BWMS failure and your mitigation actions (ROB, conducting BWE in deep sea, or Shore Reception Facility request) to manage commercial impact and Port State Control expectations.<br>Final Warning: Forcibly discharging D1/CWQ water without BWMS to enter the port at the "minimum safe navigational draft" fundamentally violates the spirit of the BWM Convention and must be approached with extreme caution.`; }
+                        else if (waterGrade === "D1") { risk = "Warning"; advice = `If Repaired Before Arrival: * Pre-emptive Decontamination: You cannot discharge "D1" directly. While en route in appropriate deep water, perform a BWE+BWT procedure for decontamination to exchange the non-compliant water to the "D2" standard.<br>Mandatory Action: You MUST notify the next port's Port State Control (PSC) prior to arrival to report this BWE+BWT procedure and obtain their explicit agreement for discharge, even if all BW o/b is exchanged to D2.<br>If PSC Disagrees: Do not discharge. You must implement contingency measures: Retain on Board (ROB) or arrange for a Shore Reception Facility (SRF) at the destination.<br>Pre-Arrival Check: Thoroughly test the BWMS prior to executing the BWE+BWT procedure to ensure the treatment process will be successful and logged correctly.<br>If Unable to Repair Before Arrival: * STRICTLY NO DIRECT DISCHARGE: Do not force the discharge of "D1" water at or near the port without explicit permission.<br>Pre-emptive Action / PSC Consultation: Contact the destination port's PSC immediately to declare the BWMS breakdown. Request exceptional permission to discharge the "D1" water in deep-sea areas (at least 50nm from the nearest land) to reach the "minimum safe navigational draft" prior to arrival.<br>If PSC Agrees: Proceed strictly according to their instructions (e.g., executing a BWE only as a contingency measure) and log all communications.<br>If PSC Disagrees: You must Retain on Board (ROB) or arrange for an SRF.<br>Mandatory Reporting: Notify the Company and Charterer immediately regarding the failure and the PSC's decision to manage commercial impact (e.g., deadfreight or delay risks).<br>Final Warning: Forcibly discharging non-compliant "D1" water to enter the port at the "minimum safe navigational draft" fundamentally violates the spirit of the BWM Convention and must be approached with extreme caution.`; }
+                        else if (waterGrade === "NIL") { risk = "Attention"; advice = `If Repaired Before Arrival: Perform standard pre-arrival BWMS functional tests. Confirm the system is ready to safely handle any ballasting needs required for cargo operations.<br>If Unable to Repair Before Arrival: * Action: No immediate discharge is required since the tanks are empty ("NIL").<br>Mandatory Reporting: Notify the destination port, Company, and Charterer of the equipment failure before arrival. Any ballasting operations at the destination port will result in untreated water being taken on board, which must be managed strictly through an approved contingency plan (e.g., ROB for the outbound voyage or utilizing a Shore Reception Facility).`; }
+                    }
+                } else { // Danger Env
+                    if (bwmcStatus === 'Normal') {
+                        if (waterGrade === "D2") { risk = "Attention"; advice = `Action: Execute standard BWM operations. The onboard "D2" water is compliant for discharge at the destination.<br>Pre-Arrival Check: Conduct routine testing and pre-arrival inspections of the BWMS. Verify all sensors and logs are functioning correctly to ensure the system remains fully operational for any required ballasting/deballasting in port.`; }
+                        else if (waterGrade === "D1/CWQ") { risk = "Attention"; advice = `Action (Decontamination): Execute a BWE+BWT (Ballast Water Exchange + Treatment) procedure at an appropriate location during the voyage for decontamination.<br>Legality & Notification: You must notify the next port of this operation. Do not worry—this is completely legal. Because your initial water grade is "D1/CWQ", this decontamination process is a fully compliant standard operation.<br>Pre-Arrival Check: Perform a routine inspection of the BWMS before arrival to ensure the system is fully operational for any cargo operations at the destination.`; }
+                        else if (waterGrade === "D1") { risk = "Warning"; advice = `Pre-emptive Decontamination: You cannot discharge "D1" directly. While en route in appropriate deep water, perform a BWE+BWT procedure for decontamination to exchange the non-compliant water to the "D2" standard.<br>Note the critical difference: Here, decontamination is not a standard operation but a pre-emptive measure taken by the shipowner to correct a non-compliant ("D1") status.<br>Mandatory Action: You MUST notify the next port's Port State Control (PSC) prior to arrival to report this BWE+BWT procedure and obtain their explicit agreement for discharge, even if all BW o/b is exchanged to D2.<br>If PSC Disagrees: Do not discharge. You must implement contingency measures: Retain on Board (ROB) or arrange for a Shore Reception Facility (SRF) at the destination.<br>Pre-Arrival Check: Thoroughly test the BWMS prior to executing the BWE+BWT procedure to ensure the treatment process will be successful and logged correctly.`; }
+                        else if (waterGrade === "NIL") { risk = "Normal"; advice = `Action: Standard operations apply. No immediate discharge or exchange actions are required en route.<br>Pre-Arrival Check: Execute standard pre-arrival BWMS checks. Confirm the system is clear of alarms and fully ready to handle any ballasting needs required for cargo operations at the destination port.`; }
+                    } else { // Faulty
+                        if (waterGrade === "D2") { risk = "Warning"; advice = `If Repaired Before Arrival: * Perform a comprehensive pre-arrival check and functional test of the BWMS.<br>Ensure all repairs and tests are accurately logged in the Ballast Water Record Book (BWRB). Standard discharge procedures apply.<br>If Unable to Repair Before Arrival: * Pre-emptive Action (Deep Sea Discharge): In deep-sea areas (at least 50nm from the nearest land), prioritize ship stability and aim to discharge the compliant "D2" water to reach the "minimum safe navigational draft" to prevent cargo shutout at the destination. However this violated BWMC regulations (see Final Warning below).<br>CRITICAL PRE-REQUISITE (For Active Substance Systems): You MUST manually test the TRO level using a portable test kit before discharging.<br>If TRO < MADC (Typically < 0.1 mg/L): Proceed to discharge. The water has naturally degraded and is fully compliant.<br>If TRO > MADC: STRICTLY NO DIRECT DISCHARGE. Do not force the discharge. The risk of PSC detention and massive fines far outweighs commercial delays.<br>Alternative Action for High TRO: 1. Consult the vessel's approved Ballast Water Management Plan (BWMP) immediately to see if Emergency Manual Neutralization (e.g., manual dosing of Sodium Thiosulfate) is permitted. If yes, execute strictly per BWMP, re-test TRO, and discharge only when compliant.<br>2. If manual neutralization is not possible, you must Retain on Board (ROB).<br>Mandatory Reporting: Notify the Company, Charterer, and the destination port immediately regarding the BWMS failure and your mitigation actions (ROB or Shore Reception Facility request) to manage commercial impact and Port State Control expectations.<br>Final Warning: Forcibly discharging D2 water without BWMS to enter the port at the "minimum safe navigational draft" fundamentally violates the spirit of the BWM Convention and must be approached with extreme caution.`; }
+                        else if (waterGrade === "D1/CWQ") { risk = "Warning"; advice = `If Repaired Before Arrival: * Action (Decontamination): Execute a BWE+BWT (Ballast Water Exchange + Treatment) procedure at an appropriate location during the voyage for decontamination.<br>Legality & Notification: You must notify the next port of this operation. Do not worry—this is completely legal. Because your initial water grade is "D1/CWQ", this decontamination process is a fully compliant standard operation.<br>Pre-Arrival Check: Perform a comprehensive pre-arrival check to ensure the BWMS is fully operational for any ballasting operations required during cargo handling at the destination.<br>If Unable to Repair Before Arrival: * Pre-emptive Action (Deep Sea Discharge): In deep-sea areas (at least 50nm from the nearest land), prioritize ship stability and aim to discharge the water to reach the "minimum safe navigational draft" to prevent cargo shutout at the destination. However this violated BWMC regulations (see Final Warning below).<br>CRITICAL PRE-REQUISITE (For Active Substance Systems): You MUST manually test the TRO level using a portable test kit before discharging.<br>If TRO < MADC (Typically < 0.1 mg/L): Proceed to discharge. The water has naturally degraded and is fully compliant.<br>If TRO > MADC: STRICTLY NO DIRECT DISCHARGE. Do not force the discharge. The risk of PSC detention and massive fines far outweighs commercial delays.<br>Alternative Action for High TRO: 1. Consult the vessel's approved Ballast Water Management Plan (BWMP) immediately to see if Emergency Manual Neutralization (e.g., manual dosing of Sodium Thiosulfate) is permitted. If yes, execute strictly per BWMP, re-test TRO, and discharge only when compliant.<br>2. If manual neutralization is not possible, you must Retain on Board (ROB).<br>Mandatory Reporting: Notify the Company, Charterer, and the destination port immediately regarding the BWMS failure and your mitigation actions (ROB, conducting BWE in deep sea, or Shore Reception Facility request) to manage commercial impact and Port State Control expectations.<br>Final Warning: Forcibly discharging D1/CWQ water without BWMS to enter the port at the "minimum safe navigational draft" fundamentally violates the spirit of the BWM Convention and must be approached with extreme caution.`; }
+                        else if (waterGrade === "D1") { risk = "Warning"; advice = `If Repaired Before Arrival: * Pre-emptive Decontamination: You cannot discharge "D1" directly. While en route in appropriate deep water, perform a BWE+BWT procedure for decontamination to exchange the non-compliant water to the "D2" standard.<br>Mandatory Action: You MUST notify the next port's Port State Control (PSC) prior to arrival to report this BWE+BWT procedure and obtain their explicit agreement for discharge, even if all BW o/b is exchanged to D2.<br>If PSC Disagrees: Do not discharge. You must implement contingency measures: Retain on Board (ROB) or arrange for a Shore Reception Facility (SRF) at the destination.<br>Pre-Arrival Check: Thoroughly test the BWMS prior to executing the BWE+BWT procedure to ensure the treatment process will be successful and logged correctly.<br>If Unable to Repair Before Arrival: * STRICTLY NO DIRECT DISCHARGE: Do not force the discharge of "D1" water at or near the port without explicit permission.<br>Pre-emptive Action / PSC Consultation: Contact the destination port's PSC immediately to declare the BWMS breakdown. Request exceptional permission to discharge the "D1" water in deep-sea areas (at least 50nm from the nearest land) to reach the "minimum safe navigational draft" prior to arrival.<br>If PSC Agrees: Proceed strictly according to their instructions (e.g., executing a BWE only as a contingency measure) and log all communications.<br>If PSC Disagrees: You must Retain on Board (ROB) or arrange for an SRF.<br>Mandatory Reporting: Notify the Company and Charterer immediately regarding the failure and the PSC's decision to manage commercial impact (e.g., deadfreight or delay risks).<br>Final Warning: Forcibly discharging non-compliant "D1" water to enter the port at the "minimum safe navigational draft" fundamentally violates the spirit of the BWM Convention and must be approached with extreme caution.`; }
+                        else if (waterGrade === "NIL") { risk = "Attention"; advice = `If Repaired Before Arrival: Perform standard pre-arrival BWMS functional tests. Confirm the system is ready to safely handle any ballasting needs required for cargo operations.<br>If Unable to Repair Before Arrival: * Action: No immediate discharge is required since the tanks are empty ("NIL").<br>Mandatory Reporting: Notify the destination port, Company, and Charterer of the equipment failure before arrival. Any ballasting operations at the destination port will result in untreated water being taken on board, which must be managed strictly through an approved contingency plan (e.g., ROB for the outbound voyage or utilizing a Shore Reception Facility).`; }
+                    }
+                }
+            } else { // Unloading
+                if (envIndex === 'Normal') {
+                    if (bwmcStatus === 'Normal') {
+                        if (waterGrade === "D2") { risk = "Normal"; advice = `Action: Execute standard BWM operations. The onboard "D2" water is compliant for discharge at the destination.<br>Pre-Arrival Check: Conduct routine testing and pre-arrival inspections of the BWMS. Verify all sensors and logs are functioning correctly to ensure the system remains fully operational for any required ballasting/deballasting in port.`; }
+                        else if (waterGrade === "D1/CWQ") { risk = "Normal"; advice = `Action (Decontamination): Execute a BWE+BWT (Ballast Water Exchange + Treatment) procedure at an appropriate location during the voyage for decontamination.<br>Legality & Notification: You must notify the next port of this operation. Do not worry—this is completely legal. Because your initial water grade is "D1/CWQ", this decontamination process is a fully compliant standard operation.<br>Pre-Arrival Check: Perform a routine inspection of the BWMS before arrival to ensure the system is fully operational for any cargo operations at the destination.`; }
+                        else if (waterGrade === "D1") { risk = "Warning"; advice = `Pre-emptive Decontamination: You cannot discharge "D1" directly. While en route in appropriate deep water, perform a BWE+BWT procedure for decontamination to exchange the non-compliant water to the "D2" standard.<br>Note the critical difference: Here, decontamination is not a standard operation but a pre-emptive measure taken by the shipowner to correct a non-compliant ("D1") status.<br>Mandatory Action: You MUST notify the next port's Port State Control (PSC) prior to arrival to report this BWE+BWT procedure and obtain their explicit agreement for discharge, even if all BW o/b is exchanged to D2.<br>If PSC Disagrees: Do not discharge. You must implement contingency measures: Retain on Board (ROB) or arrange for a Shore Reception Facility (SRF) at the destination.<br>Pre-Arrival Check: Thoroughly test the BWMS prior to executing the BWE+BWT procedure to ensure the treatment process will be successful and logged correctly.`; }
+                        else if (waterGrade === "NIL") { risk = "Normal"; advice = `Action: Standard operations apply. No immediate discharge or exchange actions are required en route.<br>Pre-Arrival Check: Execute standard pre-arrival BWMS checks. Confirm the system is clear of alarms and fully ready to handle any ballasting needs required for cargo operations at the destination port.`; }
+                    } else { // Faulty
+                        if (waterGrade === "D2") { risk = "Warning"; advice = `If Repaired Before Arrival: * Perform a comprehensive pre-arrival check and functional test of the BWMS.<br>Ensure all repairs and tests are accurately logged in the Ballast Water Record Book (BWRB). Standard discharge procedures apply.<br>If Unable to Repair Before Arrival: During discharging, the system must be bypassed. Since this is an equipment failure, CWQ provisions cannot be invoked. The decontamination procedure must be reviewed and approved by the next-next port. If PSC Disagrees: Do not discharge. You must implement contingency measures: Retain on Board (ROB) or arrange for a Shore Reception Facility (SRF) at the next-next port.`; }
+                        else if (waterGrade === "D1/CWQ") { risk = "Warning"; advice = `If Repaired Before Arrival: * Action (Decontamination): Execute a BWE+BWT (Ballast Water Exchange + Treatment) procedure at an appropriate location during the voyage for decontamination.<br>Legality & Notification: You must notify the next port of this operation. Do not worry—this is completely legal. Because your initial water grade is "D1/CWQ", this decontamination process is a fully compliant standard operation.<br>Pre-Arrival Check: Perform a comprehensive pre-arrival check to ensure the BWMS is fully operational for any ballasting operations required during cargo handling at the destination.<br>If Unable to Repair Before Arrival: During discharging, the system must be bypassed. Since this is an equipment failure, CWQ provisions cannot be invoked. The decontamination procedure must be reviewed and approved by the next-next port. If PSC Disagrees: Do not discharge. You must implement contingency measures: Retain on Board (ROB) or arrange for a Shore Reception Facility (SRF) at the next-next port.`; }
+                        else if (waterGrade === "D1") { risk = "Warning"; advice = `If Repaired Before Arrival: * Pre-emptive Decontamination: You cannot discharge "D1" directly. While en route in appropriate deep water, perform a BWE+BWT procedure for decontamination to exchange the non-compliant water to the "D2" standard.<br>Mandatory Action: You MUST notify the next port's Port State Control (PSC) prior to arrival to report this BWE+BWT procedure and obtain their explicit agreement for discharge, even if all BW o/b is exchanged to D2.<br>If PSC Disagrees: Do not discharge. You must implement contingency measures: Retain on Board (ROB) or arrange for a Shore Reception Facility (SRF) at the destination.<br>Pre-Arrival Check: Thoroughly test the BWMS prior to executing the BWE+BWT procedure to ensure the treatment process will be successful and logged correctly.<br>If Unable to Repair Before Arrival: During discharging, the system must be bypassed. Since this is an equipment failure, CWQ provisions cannot be invoked. The decontamination procedure must be reviewed and approved by the next-next port. If PSC Disagrees: Do not discharge. You must implement contingency measures: Retain on Board (ROB) or arrange for a Shore Reception Facility (SRF) at the next-next port.`; }
+                        else if (waterGrade === "NIL") { risk = "Warning"; advice = `If Repaired Before Arrival: Perform standard pre-arrival BWMS functional tests. Confirm the system is ready to safely handle any ballasting needs required for cargo operations.<br>If Unable to Repair Before Arrival: During discharging, the system must be bypassed. Since this is an equipment failure, CWQ provisions cannot be invoked. The decontamination procedure must be reviewed and approved by the next-next port. If PSC Disagrees: Do not discharge. You must implement contingency measures: Retain on Board (ROB) or arrange for a Shore Reception Facility (SRF) at the next-next port.`; }
+                    }
+                } else { // Danger Env
+                    if (bwmcStatus === 'Normal') {
+                        if (waterGrade === "D2") { risk = "Attention"; advice = `Action: Execute standard BWM operations. The onboard "D2" water is compliant for discharge at the destination.<br>Pre-Arrival Check: Conduct routine testing and pre-arrival inspections of the BWMS. Verify all sensors and logs are functioning correctly to ensure the system remains fully operational for any required ballasting/deballasting in port.`; }
+                        else if (waterGrade === "D1/CWQ") { risk = "Attention"; advice = `Action (Decontamination): Execute a BWE+BWT (Ballast Water Exchange + Treatment) procedure at an appropriate location during the voyage for decontamination.<br>Legality & Notification: You must notify the next port of this operation. Do not worry—this is completely legal. Because your initial water grade is "D1/CWQ", this decontamination process is a fully compliant standard operation.<br>Pre-Arrival Check: Perform a routine inspection of the BWMS before arrival to ensure the system is fully operational for any cargo operations at the destination.`; }
+                        else if (waterGrade === "D1") { risk = "Warning"; advice = `Pre-emptive Decontamination: You cannot discharge "D1" directly. While en route in appropriate deep water, perform a BWE+BWT procedure for decontamination to exchange the non-compliant water to the "D2" standard.<br>Note the critical difference: Here, decontamination is not a standard operation but a pre-emptive measure taken by the shipowner to correct a non-compliant ("D1") status.<br>Mandatory Action: You MUST notify the next port's Port State Control (PSC) prior to arrival to report this BWE+BWT procedure and obtain their explicit agreement for discharge, even if all BW o/b is exchanged to D2.<br>If PSC Disagrees: Do not discharge. You must implement contingency measures: Retain on Board (ROB) or arrange for a Shore Reception Facility (SRF) at the destination.<br>Pre-Arrival Check: Thoroughly test the BWMS prior to executing the BWE+BWT procedure to ensure the treatment process will be successful and logged correctly.`; }
+                        else if (waterGrade === "NIL") { risk = "Normal"; advice = `Action: Standard operations apply. No immediate discharge or exchange actions are required en route.<br>Pre-Arrival Check: Execute standard pre-arrival BWMS checks. Confirm the system is clear of alarms and fully ready to handle any ballasting needs required for cargo operations at the destination port.`; }
+                    } else { // Faulty
+                        if (waterGrade === "D2") { risk = "Warning"; advice = `If Repaired Before Arrival: * Perform a comprehensive pre-arrival check and functional test of the BWMS.<br>Ensure all repairs and tests are accurately logged in the Ballast Water Record Book (BWRB). Standard discharge procedures apply.<br>If Unable to Repair Before Arrival: During discharging, the system must be bypassed. Since this is an equipment failure, CWQ provisions cannot be invoked. The decontamination procedure must be reviewed and approved by the next-next port. If PSC Disagrees: Do not discharge. You must implement contingency measures: Retain on Board (ROB) or arrange for a Shore Reception Facility (SRF) at the next-next port.`; }
+                        else if (waterGrade === "D1/CWQ") { risk = "Warning"; advice = `If Repaired Before Arrival: * Action (Decontamination): Execute a BWE+BWT (Ballast Water Exchange + Treatment) procedure at an appropriate location during the voyage for decontamination.<br>Legality & Notification: You must notify the next port of this operation. Do not worry—this is completely legal. Because your initial water grade is "D1/CWQ", this decontamination process is a fully compliant standard operation.<br>Pre-Arrival Check: Perform a comprehensive pre-arrival check to ensure the BWMS is fully operational for any ballasting operations required during cargo handling at the destination.<br>If Unable to Repair Before Arrival: During discharging, the system must be bypassed. Since this is an equipment failure, CWQ provisions cannot be invoked. The decontamination procedure must be reviewed and approved by the next-next port. If PSC Disagrees: Do not discharge. You must implement contingency measures: Retain on Board (ROB) or arrange for a Shore Reception Facility (SRF) at the next-next port.`; }
+                        else if (waterGrade === "D1") { risk = "Warning"; advice = `If Repaired Before Arrival: * Pre-emptive Decontamination: You cannot discharge "D1" directly. While en route in appropriate deep water, perform a BWE+BWT procedure for decontamination to exchange the non-compliant water to the "D2" standard.<br>Mandatory Action: You MUST notify the next port's Port State Control (PSC) prior to arrival to report this BWE+BWT procedure and obtain their explicit agreement for discharge, even if all BW o/b is exchanged to D2.<br>If PSC Disagrees: Do not discharge. You must implement contingency measures: Retain on Board (ROB) or arrange for a Shore Reception Facility (SRF) at the destination.<br>Pre-Arrival Check: Thoroughly test the BWMS prior to executing the BWE+BWT procedure to ensure the treatment process will be successful and logged correctly.<br>If Unable to Repair Before Arrival: During discharging, the system must be bypassed. Since this is an equipment failure, CWQ provisions cannot be invoked. The decontamination procedure must be reviewed and approved by the next-next port. If PSC Disagrees: Do not discharge. You must implement contingency measures: Retain on Board (ROB) or arrange for a Shore Reception Facility (SRF) at the next-next port.`; }
+                        else if (waterGrade === "NIL") { risk = "Warning"; advice = `If Repaired Before Arrival: Perform standard pre-arrival BWMS functional tests. Confirm the system is ready to safely handle any ballasting needs required for cargo operations.<br>If Unable to Repair Before Arrival: During discharging, the system must be bypassed. Since this is an equipment failure, CWQ provisions cannot be invoked. The decontamination procedure must be reviewed and approved by the next-next port. If PSC Disagrees: Do not discharge. You must implement contingency measures: Retain on Board (ROB) or arrange for a Shore Reception Facility (SRF) at the next-next port.`; }
+                    }
+                }
+            }
+            return { risk, advice };
+        }
+
+        function displayResult(risk, waterGrade, envIndex, envWarnings, advice) {
+            const section = document.getElementById('resultSection');
+            const light = document.getElementById('riskLight');
+            const riskTitle = document.getElementById('riskTitle');
+            const riskDesc = document.getElementById('riskDesc');
+            const wrapper = document.querySelector('.scroll-wrapper');
+            
+            const ackBtn = document.getElementById('ackButton');
+            ackBtn.disabled = false;
+            ackBtn.classList.remove('btn-secondary');
+            ackBtn.classList.add('btn-success');
+            ackBtn.innerHTML = '<i class="fa fa-check-square-o"></i> I Acknowledge, Save Data & Download PDF';
+
+            section.classList.remove('d-none');
+            light.className = `risk-${risk.toLowerCase()}`;
+            
+            const riskIcons = { Normal: 'fa-check-circle', Attention: 'fa-exclamation-circle', Warning: 'fa-exclamation-triangle' };
+            riskTitle.innerHTML = `<i class="fa ${riskIcons[risk]}"></i> ${risk.toUpperCase()}`;
+            riskDesc.textContent = risk === "Normal" ? "No risk identified - BWM compliance is maintained." : 
+                                   risk === "Attention" ? "Potential compliance risk - Immediate actions required." : 
+                                   "High compliance risk - Critical actions required.";
+            
+            document.getElementById('statusWaterGrade').innerHTML = `<strong>Water Grade Index:</strong> ${waterGrade}`;
+            document.getElementById('statusEnv').innerHTML = `<strong>Destination Environment Index:</strong> ${envIndex === "Normal" ? "Safe" : "Danger"}`;
+            
+            document.getElementById('actionAdvice').innerHTML = "<h5 class='alert-heading mb-2'>Action & Advice:</h5>" + advice;
+            
+            initAnchorNav();
+            setTimeout(() => { wrapper.scrollTo({ top: section.offsetTop - 60, behavior: 'smooth' }); }, 100);
+        }
+
+        async function acknowledgeResult() {
+            const btn = document.getElementById('ackButton');
+            btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Saving & Generating PDF (Please wait, this may take up to 3 minutes)...';
+            btn.disabled = true;
+
+            let destPortVal = "";
+            if (!document.getElementById('destPortSelect').classList.contains('d-none')) {
+                destPortVal = document.getElementById('destPortSelect').value === "Other" ? document.getElementById('destPortOther').value : document.getElementById('destPortSelect').value;
+            } else {
+                destPortVal = document.getElementById('destPortText').value;
+            }
+
+            const now = new Date();
+            const reportTimeUTC = now.toISOString().replace('T', ' ').substring(0, 19) + ' UTC';
+            
+            const payload = {
+                action: 'saveAssessment',
+                reportTime: reportTimeUTC,
+                vesselName: document.getElementById('vesselName').value,
+                voyageNo: document.getElementById('voyageNo').value,
+                etd: document.getElementById('etd').value,
+                depCountry: document.getElementById('depCountry').value,
+                depPort: document.getElementById('depPort').value,
+                d1Vol: document.getElementById('d1Vol').value || '0',
+                d2Vol: document.getElementById('d2Vol').value || '0',
+                waterGrade: globalWaterGrade,
+                depTestTime: document.getElementById('depTestTime').value,
+                depTestResult: document.getElementById('depTestResult').value,
+                eta: document.getElementById('eta').value,
+                destCountry: document.getElementById('destCountry').value,
+                destPort: destPortVal,
+                cargoOps: document.getElementById('cargoOps').value,
+                destTemp: document.getElementById('destTemp').value,
+                destDensity: document.getElementById('destDensity').value,
+                destSalinity: document.getElementById('destSalinity').value,
+                destUVT: document.getElementById('destUVT').value,
+                envIndex: globalEnvIndex,
+                masterName: document.getElementById('masterName').value,
+                coName: document.getElementById('coName').value,
+                ceName: document.getElementById('ceName').value,
+                destPortRisk: globalRisk
+            };
+
+            try {
+                await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(payload) });
+                
+                await generatePDFReport(payload);
+
+                const timeString = now.toLocaleString('en-US', { hour12: false });
+                btn.innerHTML = `<i class="fa fa-check"></i> Processed successfully at ${timeString}`;
+                btn.classList.remove('btn-success');
+                btn.classList.add('btn-secondary');
+
+            } catch (error) {
+                console.error("Upload failed:", error);
+                btn.innerHTML = `<i class="fa fa-exclamation-triangle"></i> Failed to process. Click to Retry`;
+                btn.disabled = false;
+            }
+        }
+
+        function generatePDFReport(data) {
+            const adviceHTML = document.getElementById('actionAdvice').innerHTML;
+            const riskColor = globalRisk === 'Normal' ? '#28a745' : (globalRisk === 'Attention' ? '#ffc107' : '#dc3545');
+
+            const depLocation = [data.depPort, data.depCountry].filter(Boolean).join(', ');
+            const destLocation = [data.destPort, data.destCountry].filter(Boolean).join(', ');
+
+            const pdfContent = `
+                <div style="padding: 40px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #333; font-size: 14px;">
+                    <div style="text-align: center; border-bottom: 3px solid #0056b3; padding-bottom: 15px; margin-bottom: 25px;">
+                        <h1 style="color: #0056b3; margin: 0; font-size: 32px; font-weight: 700;">BallaSafe</h1>
+                        <h4 style="margin: 8px 0 0 0; color: #555; font-size: 18px;">Pre-voyage BWMC Reliability Assessment Report</h4>
+                    </div>
+
+                    <div style="margin-bottom: 25px;">
+                        <h5 style="background-color: #e9f2fc; padding: 10px 12px; border-left: 4px solid #0056b3; margin-bottom: 15px; font-size: 16px; font-weight: bold; border-radius: 2px;">Part 1: Voyage Information</h5>
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <tr>
+                                <td style="padding: 8px; width: 20%;"><strong>Ship Name:</strong></td><td style="padding: 8px; width: 30%; border-bottom: 1px solid #ddd;">${data.vesselName || ''}</td>
+                                <td style="padding: 8px; width: 20%;"><strong>Voyage No.:</strong></td><td style="padding: 8px; width: 30%; border-bottom: 1px solid #ddd;">${data.voyageNo || ''}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 8px;"><strong>Report Date:</strong></td><td style="padding: 8px; border-bottom: 1px solid #ddd;">${document.getElementById('reportDate').value || ''}</td>
+                                <td style="padding: 8px;"><strong>Master Name:</strong></td><td style="padding: 8px; border-bottom: 1px solid #ddd;">${data.masterName || ''}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 8px;"><strong>C/O Name:</strong></td><td style="padding: 8px; border-bottom: 1px solid #ddd;">${data.coName || ''}</td>
+                                <td style="padding: 8px;"><strong>C/E Name:</strong></td><td style="padding: 8px; border-bottom: 1px solid #ddd;">${data.ceName || ''}</td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <div style="margin-bottom: 25px;">
+                        <h5 style="background-color: #e9f2fc; padding: 10px 12px; border-left: 4px solid #0056b3; margin-bottom: 15px; font-size: 16px; font-weight: bold; border-radius: 2px;">Part 2: BWMC Specifications</h5>
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <tr>
+                                <td style="padding: 8px; width: 20%;"><strong>Maker:</strong></td><td style="padding: 8px; width: 30%; border-bottom: 1px solid #ddd;">${document.getElementById('bwmsMaker').value || ''}</td>
+                                <td style="padding: 8px; width: 20%;"><strong>Type:</strong></td><td style="padding: 8px; width: 30%; border-bottom: 1px solid #ddd;">${document.getElementById('bwmsType').value || ''}</td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <div style="margin-bottom: 25px;">
+                        <h5 style="background-color: #e9f2fc; padding: 10px 12px; border-left: 4px solid #0056b3; margin-bottom: 15px; font-size: 16px; font-weight: bold; border-radius: 2px;">Part 3: Departure Information</h5>
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <tr>
+                                <td style="padding: 8px; width: 20%;"><strong>Departure Port:</strong></td><td style="padding: 8px; width: 30%; border-bottom: 1px solid #ddd;">${depLocation}</td>
+                                <td style="padding: 8px; width: 20%;"><strong>Water Grade:</strong></td><td style="padding: 8px; width: 30%; border-bottom: 1px solid #ddd;"><strong>${data.waterGrade || ''}</strong></td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 8px;"><strong>D1 Vol (m³):</strong></td><td style="padding: 8px; border-bottom: 1px solid #ddd;">${data.d1Vol !== undefined ? data.d1Vol : ''}</td>
+                                <td style="padding: 8px;"><strong>D2 Vol (m³):</strong></td><td style="padding: 8px; border-bottom: 1px solid #ddd;">${data.d2Vol !== undefined ? data.d2Vol : ''}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 8px;"><strong>BWMS Test Time:</strong></td><td style="padding: 8px; border-bottom: 1px solid #ddd;">${data.depTestTime ? data.depTestTime.replace('T', ' ') : ''}</td>
+                                <td style="padding: 8px;"><strong>Test Result:</strong></td><td style="padding: 8px; border-bottom: 1px solid #ddd;">${data.depTestResult || ''}</td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <div style="margin-bottom: 25px;">
+                        <h5 style="background-color: #e9f2fc; padding: 10px 12px; border-left: 4px solid #0056b3; margin-bottom: 15px; font-size: 16px; font-weight: bold; border-radius: 2px;">Part 4: Destination Information</h5>
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <tr>
+                                <td style="padding: 8px; width: 20%;"><strong>Arrival Port:</strong></td><td style="padding: 8px; width: 30%; border-bottom: 1px solid #ddd;">${destLocation}</td>
+                                <td style="padding: 8px; width: 20%;"><strong>ETA:</strong></td><td style="padding: 8px; width: 30%; border-bottom: 1px solid #ddd;">${data.eta || ''}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 8px;"><strong>Cargo Operation:</strong></td><td style="padding: 8px; border-bottom: 1px solid #ddd;">${data.cargoOps || ''}</td>
+                                <td style="padding: 8px;"><strong>Env Index:</strong></td><td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>${data.envIndex === "Normal" ? "Safe" : (data.envIndex === "Danger" ? "Danger" : "")}</strong></td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 8px;"><strong>Water Density:</strong></td><td style="padding: 8px; border-bottom: 1px solid #ddd;">${data.destDensity || ''}</td>
+                                <td style="padding: 8px;"><strong>Water Salinity:</strong></td><td style="padding: 8px; border-bottom: 1px solid #ddd;">${data.destSalinity ? data.destSalinity + ' PSU' : ''}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 8px;"><strong>UV-T (%):</strong></td><td style="padding: 8px; border-bottom: 1px solid #ddd;" colspan="3">${data.destUVT || ''}</td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <h5 style="background-color: #e8f5e9; padding: 10px 12px; border-left: 4px solid #28a745; margin-bottom: 15px; font-size: 16px; font-weight: bold; border-radius: 2px;">Part 5: Assessment Result</h5>
+                        <div style="padding: 15px; border: 1px solid #dee2e6; border-radius: 6px; background-color: #fdfdfd;">
+                            <div style="font-size: 18px; font-weight: bold; margin-bottom: 15px; color: ${riskColor}; padding-bottom: 10px; border-bottom: 1px dashed #ddd;">
+                                Destination Port Risk Signal: ${data.destPortRisk ? data.destPortRisk.toUpperCase() : ''}
+                            </div>
+                            <div style="line-height: 1.7; font-size: 13.5px; color: #444;">
+                                ${adviceHTML.replace(/alert-heading/g, '').replace(/mb-2/g, 'margin-bottom: 10px; font-weight: bold; font-size: 15px; color: #0056b3;')}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="text-align: right; margin-top: 30px; font-size: 12px; color: #888; border-top: 1px solid #eee; padding-top: 10px;">
+                        Report generated by BallaSafe System. Timestamp: ${data.reportTime}
+                    </div>
+                </div>
+            `;
+
+            const element = document.createElement('div');
+            element.innerHTML = pdfContent;
+
+            const opt = {
+                margin:       10,
+                filename:     `BallaSafe_Report_${(data.vesselName || 'Vessel').replace(/[^a-zA-Z0-9]/g, '_')}_${document.getElementById('reportDate').value}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            return html2pdf().set(opt).from(element).save();
+        }
+
+        function initAnchorNav() {
+            const wrapper = document.querySelector('.scroll-wrapper');
+            if (!isScrollListenerAdded) {
+                wrapper.addEventListener('scroll', () => {
+                    let current = 'part1'; 
+                    const activeSections = document.querySelectorAll('.section-container:not(.d-none)');
+                    
+                    activeSections.forEach(section => {
+                        const sectionTop = section.offsetTop;
+                        if (wrapper.scrollTop >= (sectionTop - 150)) {
+                            current = section.getAttribute('id');
+                        }
+                    });
+
+                    document.querySelectorAll('.anchor-nav a').forEach(anchor => {
+                        anchor.classList.remove('active');
+                        if (anchor.getAttribute('href') === `#${current}`) {
+                            anchor.classList.add('active');
+                        }
+                    });
+                });
+                isScrollListenerAdded = true;
+            }
+
+            const anchors = document.querySelectorAll('.anchor-nav a');
+            anchors.forEach(anchor => {
+                const newAnchor = anchor.cloneNode(true);
+                anchor.parentNode.replaceChild(newAnchor, anchor);
+                newAnchor.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const targetId = this.getAttribute('href').substring(1);
+                    const targetSection = document.getElementById(targetId);
+                    if(targetSection) {
+                        const targetPos = targetSection.offsetTop - 20; 
+                        wrapper.scrollTo({ top: targetPos, behavior: 'smooth' });
+                    }
+                });
+            });
+        }
+    </script>
+</body>
+</html>
