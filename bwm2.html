@@ -561,27 +561,46 @@
                     // 4. 將圖片寫入 jsPDF 並處理分頁
                     const { jsPDF } = window.jspdf;
                     const pdf = new jsPDF('p', 'mm', 'a4');
-                    
-                    // 【關鍵修改】：改用 jpeg 格式，並設定品質為 0.95 (0~1之間，兼顧畫質與容量)
-                    const imgData = canvas.toDataURL('image/jpeg', 0.95); 
+                    const imgData = canvas.toDataURL('image/jpeg', 0.95);
                     
                     const pageWidth = 210;
                     const pageHeight = 297;
+                    const margin = 15; // 分頁時的上下留白 (15mm)
                     const imgWidth = pageWidth;
                     const imgHeight = (canvas.height * imgWidth) / canvas.width;
-                    let heightLeft = imgHeight;
-                    let position = 0;
-
-                    // 寫入第一頁，標記改為 JPEG
-                    pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
-                    heightLeft -= pageHeight;
+                    
+                    // 第一頁：從 Y=0 開始印 (因為 HTML 的 padding 已經產生了頂部的完美留白)
+                    pdf.addImage(imgData, 'JPEG', 0, 0, imgWidth, imgHeight);
+                    
+                    // 在第一頁底部加上白色遮罩，避免文字貼齊底部邊緣
+                    pdf.setFillColor(255, 255, 255);
+                    pdf.rect(0, pageHeight - margin, pageWidth, margin, 'F');
+                    
+                    // 計算第一頁實際印出了多少高度的影像
+                    let imageYProcessed = pageHeight - margin;
+                    let heightLeft = imgHeight - imageYProcessed;
 
                     // 若內容超出一頁，自動新增頁面
                     while (heightLeft > 0) {
-                        position = heightLeft - imgHeight;
                         pdf.addPage();
-                        pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight); // 標記改為 JPEG
-                        heightLeft -= pageHeight;
+                        
+                        // 精準計算下一頁的 Y 軸偏移量：
+                        // 讓上一頁被截斷的地方 (imageYProcessed)，對齊到新頁面的上方留白 (margin)
+                        let position = margin - imageYProcessed;
+                        
+                        pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+                        
+                        // 畫頂部白色遮罩 (蓋掉與上一頁重複連接的部分，形成乾淨的上邊界)
+                        pdf.setFillColor(255, 255, 255);
+                        pdf.rect(0, 0, pageWidth, margin, 'F');
+                        
+                        // 畫底部白色遮罩 (形成下邊界)
+                        pdf.rect(0, pageHeight - margin, pageWidth, margin, 'F');
+                        
+                        // 更新已處理的影像高度 (後續每一頁消耗掉的實際內容高度為 pageHeight - 上下 margin)
+                        let contentHeight = pageHeight - (margin * 2);
+                        imageYProcessed += contentHeight;
+                        heightLeft -= contentHeight;
                     }
 
                     // 5. 儲存檔案
