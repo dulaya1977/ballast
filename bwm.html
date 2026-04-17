@@ -954,41 +954,29 @@
 
                 let waterTemp = null;
                 let salinity = 35.0;
-                let workingKey = null;
+                
+                // 隨機四選一挑選一把 API Key
+                const randomIdx = Math.floor(Math.random() * OCEAN_API_KEYS.length);
+                const workingKey = OCEAN_API_KEYS[randomIdx];
 
-                for (let i = 0; i < OCEAN_API_KEYS.length; i++) {
-                    const currentKey = OCEAN_API_KEYS[i];
-                    try {
-                        const sgRes = await fetch(`https://api.stormglass.io/v2/weather/point?lat=${lat}&lng=${lng}&params=waterTemperature&start=${timestamp}&end=${timestamp}`, {
-                            headers: { 'Authorization': currentKey }
-                        });
+                console.log(`Using API Key at index: ${randomIdx}`); // 開發時可用來確認挑選結果
 
-                        if (!sgRes.ok) {
-                            if (sgRes.status === 402 || sgRes.status === 403 || sgRes.status === 429) {
-                                console.warn(`API Key ${i + 1} quota exceeded or forbidden. Trying next key...`);
-                                continue; 
-                            }
-                            throw new Error(`APIError: ${sgRes.status}`); 
-                        }
+                const sgRes = await fetch(`https://api.stormglass.io/v2/weather/point?lat=${lat}&lng=${lng}&params=waterTemperature&start=${timestamp}&end=${timestamp}`, {
+                    headers: { 'Authorization': workingKey }
+                });
 
-                        const sgData = await sgRes.json();
-                        if (!sgData.hours || sgData.hours.length === 0) throw new Error("NoData");
-
-                        waterTemp = sgData.hours[0].waterTemperature ? (sgData.hours[0].waterTemperature.sg || sgData.hours[0].waterTemperature.noaa) : null;
-                        if (waterTemp === null) throw new Error("NoData");
-
-                        workingKey = currentKey; 
-                        break; 
-                    } catch (error) {
-                        if (error.message.startsWith('APIError') || error.message === 'NoData') {
-                            throw error;
-                        }
+                if (!sgRes.ok) {
+                    if (sgRes.status === 402 || sgRes.status === 403 || sgRes.status === 429) {
+                        throw new Error("QuotaExceeded"); // 直接拋出錯誤，不再嘗試下一把
                     }
+                    throw new Error(`APIError: ${sgRes.status}`); 
                 }
 
-                if (waterTemp === null) {
-                    throw new Error("QuotaExceeded");
-                }
+                const sgData = await sgRes.json();
+                if (!sgData.hours || sgData.hours.length === 0) throw new Error("NoData");
+
+                waterTemp = sgData.hours[0].waterTemperature ? (sgData.hours[0].waterTemperature.sg || sgData.hours[0].waterTemperature.noaa) : null;
+                if (waterTemp === null) throw new Error("NoData");
 
                 try {
                     const bioRes = await fetch(`https://api.stormglass.io/v2/bio/point?lat=${lat}&lng=${lng}&params=salinity&start=${timestamp}&end=${timestamp}`, {
