@@ -953,7 +953,8 @@
                 const timestamp = Math.floor(etaDate.getTime() / 1000);
 
                 let waterTemp = null;
-                let salinity = 35.0;
+                let salinity = null;
+                let density = null;
                 
                 // 隨機四選一挑選一把 API Key
                 const randomIdx = Math.floor(Math.random() * OCEAN_API_KEYS.length);
@@ -984,15 +985,23 @@
                     });
                     if (bioRes.ok) {
                         const bioData = await bioRes.json();
-                        if (bioData.hours && bioData.hours.length > 0 && bioData.hours[0].salinity) salinity = bioData.hours[0].salinity.sg || 35.0;
+                        const fetchedSalinity = bioData.hours && bioData.hours.length > 0 && bioData.hours[0].salinity
+                            ? (bioData.hours[0].salinity.sg ?? bioData.hours[0].salinity.noaa ?? null)
+                            : null;
+                        if (typeof fetchedSalinity === 'number' && Number.isFinite(fetchedSalinity)) {
+                            salinity = fetchedSalinity;
+                        }
                     }
                 } catch(e) {
-                    console.warn("Failed to fetch salinity, proceeding with default 35.0 PSU");
+                    console.warn("Failed to fetch salinity, skipping salinity and density.");
                 }
 
-                const T = waterTemp; const S = salinity;
-                const rho = 1000 + (0.824493 - 0.0040899 * T) * S - 0.00572466 * Math.pow(T, 2) + 0.10227 * T - 0.00016546 * Math.pow(T, 3);
-                const density = (rho / 1000).toFixed(3);
+                if (salinity !== null) {
+                    const T = waterTemp;
+                    const S = salinity;
+                    const rho = 1000 + (0.824493 - 0.0040899 * T) * S - 0.00572466 * Math.pow(T, 2) + 0.10227 * T - 0.00016546 * Math.pow(T, 3);
+                    density = (rho / 1000).toFixed(3);
+                }
 
                 let crossCheckAlertHtml = "";
                 const minTemp = parseFloat(minTempStr);
@@ -1004,7 +1013,7 @@
 
                 let warningsList = [];
                 const apiTempBad = (waterTemp < minTemp || waterTemp > maxTemp);
-                const apiSalBad = (bwmsType === 'Electrolysis' && salinity < minSal);
+                const apiSalBad = (bwmsType === 'Electrolysis' && salinity !== null && salinity < minSal);
                 
                 let minDensityLimit = 1.01;
                 if(bwmsType === 'Electrolysis' && !isNaN(minSal)) {
@@ -1012,7 +1021,7 @@
                     const rhor = 1000 + (0.824493 - 0.0040899 * Tr) * Sr - 0.00572466 * Math.pow(Tr, 2) + 0.10227 * Tr - 0.00016546 * Math.pow(Tr, 3);
                     minDensityLimit = rhor / 1000;
                 }
-                const apiDenBad = (bwmsType === 'Electrolysis' && parseFloat(density) < minDensityLimit);
+                const apiDenBad = (bwmsType === 'Electrolysis' && density !== null && parseFloat(density) < minDensityLimit);
 
                 if (apiTempBad) warningsList.push(`Forecasted Temperature (<strong class="text-danger">${waterTemp.toFixed(1)}°C</strong>) is OUTSIDE the BWMS limits (${minTemp}°C - ${maxTemp}°C).`);
                 if (apiSalBad) warningsList.push(`Forecasted Salinity (<strong class="text-danger">${salinity.toFixed(1)} PSU</strong>) is BELOW the required limit (${minSal} PSU).`);
@@ -1031,9 +1040,16 @@
                 }
 
                 let applyBtnHtml = "";
-                if(manTempStr === "" && manDenStr === "") {
+                if (salinity !== null && density !== null && manTempStr === "" && manDenStr === "" && manSalStr === "") {
                     applyBtnHtml = `<button type="button" class="btn-apply-data" onclick="applyOceanData(${waterTemp.toFixed(1)}, ${density}, ${salinity.toFixed(1)}, this)">Fill Empty Fields</button>`;
                 }
+
+                const densityHtml = density !== null
+                    ? `<div class="data-value">${density}</div>`
+                    : `<div class="text-muted small">Not available</div>`;
+                const salinityHtml = salinity !== null
+                    ? `<div class="data-value">${salinity.toFixed(1)} <span class="fs-6 text-muted">PSU</span></div>`
+                    : `<div class="text-muted small">Not available</div>`;
 
                 display.innerHTML = `
                     <div class="d-flex justify-content-between align-items-center mb-3">
@@ -1050,11 +1066,11 @@
                         </div>
                         <div class="col-4">
                             <div style="color: #8898aa; font-size: 0.85rem;">Density</div>
-                            <div class="data-value">${density}</div>
+                            ${densityHtml}
                         </div>
                         <div class="col-4">
                             <div style="color: #8898aa; font-size: 0.85rem;">Salinity</div>
-                            <div class="data-value">${salinity.toFixed(1)} <span class="fs-6 text-muted">PSU</span></div>
+                            ${salinityHtml}
                         </div>
                     </div>
                     ${crossCheckAlertHtml}
