@@ -477,6 +477,7 @@
                                         <option value="">Select Operation</option>
                                         <option value="Loading">Loading (Discharging Ballast)</option>
                                         <option value="Unloading">Unloading (Uptake Ballast)</option>
+                                        <option value="N/A">N/A</option>
                                     </select>
                                 </div>
 
@@ -1223,7 +1224,7 @@
 
         function getCaseResult(cargoOps, bwmcStatus, waterGrade, envIndex) {
             let risk = "Normal", advice = "";
-            const isLoading = (cargoOps === 'Loading');
+            const isLoading = (cargoOps === 'Loading' || cargoOps === 'N/A');
 
             if (isLoading) {
                 if (envIndex === 'Normal') {
